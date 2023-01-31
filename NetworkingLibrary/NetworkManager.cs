@@ -15,7 +15,7 @@ namespace NetworkingLibrary
 
     public abstract class NetworkManager
     {
-        List<Client> clients = new List<Client>();
+        List<Client> clients;
         ConnectionType connectionType;
 
         int hostIndex;

@@ -8,11 +8,16 @@ namespace NetworkingLibrary
 {
     public abstract class Networked_GameObject
     {
-        //abstract ref NetworkManager
+        NetworkManager networkManager;
+
+        public Networked_GameObject(ref NetworkManager networkManager)
+        {
+            this.networkManager = networkManager;
+        }
 
         public Packet constructPacket()
         {
-            return null;
+            throw new NotImplementedException();
         }
     }
 }

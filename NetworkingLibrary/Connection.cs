@@ -8,5 +8,24 @@ namespace NetworkingLibrary
 {
     internal class Connection
     {
+        struct Diagnostics
+        {
+            int packetLoss;
+            float RTT;
+            float latency;
+        }
+
+        Diagnostics diagnostics;
+
+        Client localClient;
+        Client remoteClient;
+
+        int remoteSequence;
+        int localSequence;
+
+        public Connection()
+        {
+            diagnostics= new Diagnostics();
+        }
     }
 }
