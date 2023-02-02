@@ -6,37 +6,48 @@ using System.Threading.Tasks;
 
 namespace NetworkingLibrary
 {
-    internal class Client
+    public class Client
     {
-        string name;
-
+        int id;
         List<Connection> connections;
 
         string ip;
 
         bool isHost;
+        bool isServer;
 
-        public Client(string name, string ip, bool isHost)
+        public Client(string ip, bool isHost, bool isServer, List<Client> otherClients)
         {
-            this.name = name;
+            Random rnd = new Random();
+            
+            // Get all client IDs
+            List<int> clientIDs = new List<int>();
+            if (otherClients != null)
+            {
+                for (int i = 0; i < otherClients.Count(); i++)
+                {
+                    if (otherClients[i] != null)
+                    {
+                        clientIDs.Add(otherClients[i].ID);
+                    }
+                }
+            }
+
+            // Generate unique ID for client
+            id = GenerateClientID(clientIDs);
+
+            int randomInt = rnd.Next(100, 201);
+            isServer = isServer;
+
             this.ip = ip;
             this.isHost = isHost;
 
             connections = new List<Connection>();
         }
 
-        public Client(string name, string ip)
+        public int ID
         {
-            this.name = name;
-            this.ip = ip;
-            this.isHost = false;
-
-            connections = new List<Connection>();
-        }
-
-        public string Name
-        {
-            get { return name; }
+            get { return id; }
         }
 
         public List<Connection> Connections
@@ -53,6 +64,19 @@ namespace NetworkingLibrary
         {
             get { return isHost; }
             set { isHost = value; }
+        }
+
+        int GenerateClientID(List<int> excludedIDs)
+        {
+            int id;
+            Random rnd = new Random();
+
+            do
+            {
+                id = rnd.Next(100, 201);
+            } while (excludedIDs.Contains(id));
+
+            return id;
         }
     }
 }

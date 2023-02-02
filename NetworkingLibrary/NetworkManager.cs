@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Net.Sockets;
+using System.Net;
 
 namespace NetworkingLibrary
 {
-    enum ConnectionType
+    public enum ConnectionType
     {
         PEER_TO_PEER,
         CLIENT_SERVER,
@@ -15,22 +17,56 @@ namespace NetworkingLibrary
 
     public abstract class NetworkManager
     {
-        List<Client> clients;
+        List<Client> remoteClients;
         ConnectionType connectionType;
 
         int hostIndex;
         int protocolID;
+        int port;
 
         Client server;
 
+        Client localClient;
+
         PacketManager packetManager;
 
-        public NetworkManager()
+        public NetworkManager(ConnectionType connectionType)
         {
+            this.connectionType = connectionType;
 
+            if (this.connectionType == ConnectionType.PEER_TO_PEER)
+            {
+                string localIP = null;
+                IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
+                foreach (IPAddress ip in host.AddressList)
+                {
+                    if (ip.AddressFamily == AddressFamily.InterNetwork)
+                    {
+                        // IP is IPv4
+                        localIP = ip.ToString();
+                        break;
+                    }
+                }
+                localClient = new Client(localIP, false, false, remoteClients);
+            }
         }
 
-        public virtual void ConnectionRequest(Packet connectionPacket)
+        public Client LocalClient
+        {
+            get { return localClient; }
+        }
+
+        public List<Client> RemoteClients
+        {
+            get { return remoteClients; }
+        }
+
+        public ConnectionType ConnectionType
+        {
+            get { return connectionType; }
+        }
+
+        public virtual void ConnectionRequest()
         {
             /*when a packet is received and determined to be an initial connection request packet,
              * this method is called. If connection succeeds, a new client is created with the information 
@@ -40,7 +76,7 @@ namespace NetworkingLibrary
              */
         }
 
-        public virtual void ClientDisconnect(Packet disconnectPacket)
+        public virtual void ClientDisconnect()
         {
             /*when a packet is received and determined to be a disconnect packet, this method is called.
              * Finds the corresponding client in the list of clients according to the IP address of the 

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NetworkingLibrary
 {
-    internal class Connection
+    public class Connection
     {
         struct Diagnostics
         {

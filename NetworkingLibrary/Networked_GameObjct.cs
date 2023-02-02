@@ -15,9 +15,11 @@ namespace NetworkingLibrary
             this.networkManager = networkManager;
         }
 
+        /*
         public Packet constructPacket()
         {
             throw new NotImplementedException();
         }
+        */
     }
 }
