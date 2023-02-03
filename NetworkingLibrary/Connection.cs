@@ -25,7 +25,7 @@ namespace NetworkingLibrary
 
         public Connection()
         {
-            diagnostics= new Diagnostics();
+            diagnostics = new Diagnostics();
         }
     }
 }

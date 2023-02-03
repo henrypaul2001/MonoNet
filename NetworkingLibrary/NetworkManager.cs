@@ -28,11 +28,11 @@ namespace NetworkingLibrary
 
         Client localClient;
 
-        PacketManager packetManager;
-
-        public NetworkManager(ConnectionType connectionType)
+        public NetworkManager(ConnectionType connectionType, int protocolID, int port)
         {
             this.connectionType = connectionType;
+            this.protocolID = protocolID;
+            this.port = port;
 
             if (this.connectionType == ConnectionType.PEER_TO_PEER)
             {
@@ -47,7 +47,7 @@ namespace NetworkingLibrary
                         break;
                     }
                 }
-                localClient = new Client(localIP, false, false, remoteClients);
+                localClient = new Client(localIP, false, false, true, remoteClients, port);
             }
         }
 

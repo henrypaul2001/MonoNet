@@ -42,6 +42,13 @@ namespace NetworkingLibrary
         Ack31 = 0 << 30,
         Ack32 = 0 << 31,
     }
+    
+    public enum PacketType
+    {
+        STANDARD,
+        CONNECT,
+        DISCONNECT,
+    }
 
     internal class Packet
     {
@@ -52,9 +59,76 @@ namespace NetworkingLibrary
         int ack;
 
         AckBitfield ackBitfield;
+        PacketType packetType;
 
-        public Packet() 
+        string ipDestination;
+        string ipSource;
+        int port;
+
+        public Packet(string ipDestination, string ipSource, int port, byte[] data, PacketType packetType) 
         {
+            this.ipDestination = ipDestination;
+            this.ipSource = ipSource;
+            this.port = port;
+            this.data = data;
+            this.packetType = packetType;
+
+            CompressData();
+        }
+
+        public string IPDestination
+        {
+            get { return ipDestination; }
+        }
+
+        public string IPSource
+        {
+            get { return ipSource; }
+        }
+
+        public int Port
+        {
+            get { return port; }
+        }
+
+        public byte[] Data
+        {
+            get { return data; }
+        }
+
+        public byte[] CompressedData
+        {
+            get { return compressedData; }
+        }
+
+        public int Sequence
+        {
+            get { return sequence; }
+        }
+
+        public int Ack
+        {
+            get { return ack; }
+        }
+
+        public PacketType PacketType
+        {
+            get { return packetType; }
+        }
+
+        public AckBitfield AckBitfield
+        {
+            get { return ackBitfield; }
+        }
+
+        void CompressData()
+        {
+            compressedData = data;
+        }
+
+        byte[] DecompressData()
+        {
+            throw new NotImplementedException();
         }
     }
 }
