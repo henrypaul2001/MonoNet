@@ -47,7 +47,7 @@ namespace NetworkingLibrary
                         break;
                     }
                 }
-                localClient = new Client(localIP, false, false, true, remoteClients, port);
+                localClient = new Client(localIP, false, false, true, this);
             }
         }
 
@@ -64,6 +64,16 @@ namespace NetworkingLibrary
         public ConnectionType ConnectionType
         {
             get { return connectionType; }
+        }
+
+        public int ProtocolID
+        {
+            get { return protocolID; }
+        }
+
+        public int Port
+        {
+            get { return port; }
         }
 
         public virtual void ConnectionRequest()
@@ -90,6 +100,21 @@ namespace NetworkingLibrary
             /*called when a client times out. Calls a game specific timeout method to give developer more
              * control over what happens when a client times out. Removes lostClient from client list
              */
+        }
+
+        public List<string> GetConnectedAddresses()
+        {
+            List<string> addresses = new List<string>();
+
+            if (remoteClients != null)
+            {
+                foreach (Client client in remoteClients)
+                {
+                    addresses.Add(client.IP);
+                }
+            }
+
+            return addresses;
         }
     }
 }

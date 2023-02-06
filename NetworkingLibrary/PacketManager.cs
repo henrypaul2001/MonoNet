@@ -11,14 +11,14 @@ namespace NetworkingLibrary
 {
     internal static class PacketManager
     {
-        static List<Packet> packetQueue = new List<Packet>();
+        static List<Packet> packetQueue;
 
         internal static void ProcessPacket(Packet packet)
         {
             // Process the byte array of packet in packetQueue
         }
 
-        internal static void StartReceiving(ref Socket socket)
+        internal static void StartReceiving(ref Socket socket, NetworkManager networkManager)
         {
             byte[] buffer = new byte[1024];
 
@@ -28,11 +28,11 @@ namespace NetworkingLibrary
             socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref remoteEP, result =>
             {
                 // Pass extra parameters to callback
-                ReceiveCallback(result, buffer);
+                ReceiveCallback(result, buffer, networkManager);
             }, socket);
         }
 
-        private static void ReceiveCallback(IAsyncResult result, byte[] data)
+        private static void ReceiveCallback(IAsyncResult result, byte[] data, NetworkManager networkManager)
         {
             Socket socket = (Socket)result.AsyncState;
 
@@ -46,12 +46,37 @@ namespace NetworkingLibrary
             Console.WriteLine($"{bytesReceived} bytes received from IP: {remoteIP.Address}");
 
             // Check if packet belongs to game by checking IP address against current connections, or checking if the protocol ID is a match
+            List<string> addresses = networkManager.GetConnectedAddresses();
+            string output = Encoding.ASCII.GetString(data);
+            string[] split = output.Split(new char[] {'/'});
+            int protocolID = int.Parse(split[0]);
+            //int protocolID = int.Parse(Encoding.ASCII.GetString(data, 0, 4));
+
+            if (addresses.Contains(remoteIP.Address.ToString()))
+            {
+                // Packet belongs to game
+
+                // Construct packet object from byte[]
+            }
+            else if (protocolID == networkManager.ProtocolID)
+            {
+                // Packet belongs to game
+
+                // Construct packet object from byte[]
+                Packet packet = ConstructPacketFromByteArray(data, remoteIP.Address.ToString());
+            }
+            else
+            {
+                // Packet does not belong to game
+
+                // Ignore packet
+            }
 
             // If packet does not belong to game, discard it and restart receive
 
             // IF packet belongs to game, add to packetqueue and restart receive
 
-            StartReceiving(ref socket);
+            StartReceiving(ref socket, networkManager);
         }
 
         internal static void ReceivePacket(ref Socket socket)
@@ -83,6 +108,23 @@ namespace NetworkingLibrary
             {
                 Console.WriteLine($"Error sending packet: {e}");
             }
+        }
+
+        private static Packet ConstructPacketFromByteArray(byte[] data, string sourceIP)
+        {
+            string payload = Encoding.ASCII.GetString(data, 0, data.Length);
+
+            string[] split = payload.Split(new char[] { '/' });
+
+            PacketType packetType;
+
+            if (split[1] == "REQUEST")
+            {
+                // Connection packet
+                return new Packet(PacketType.CONNECT, sourceIP, data);
+            }
+
+            return null;
         }
     }
 }

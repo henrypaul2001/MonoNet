@@ -12,9 +12,12 @@ namespace NetworkingLibrary
     {
         int id;
         int port;
+        int protocolID;
 
         List<Connection> connections;
         Socket socket;
+
+        NetworkManager networkManager;
 
         string ip;
 
@@ -22,9 +25,13 @@ namespace NetworkingLibrary
         bool isServer;
 
         // NOTE FOR SILLY DUMB LITTLE STUDENT TO SELF... MAKE A LOCALCLIENT CLASS THAT DERIVES FROM THIS CLIENT CLASS YOU WILL APPRECIATE THIS MESSAGE YOU LEFT FOR YOURSELF WHEN YOU FORGET THAT YOU WERE GONNA DO THAT
-        public Client(string ip, bool isHost, bool isServer, bool isLocalClient, List<Client> otherClients, int port)
+        public Client(string ip, bool isHost, bool isServer, bool isLocalClient, NetworkManager networkManager)
         {
-            this.port = port;
+            this.networkManager = networkManager;
+            List<Client> otherClients = networkManager.RemoteClients;
+
+            port = networkManager.Port;
+            protocolID = networkManager.ProtocolID;
 
             // Get all client IDs
             List<int> clientIDs = new List<int>();
@@ -95,10 +102,10 @@ namespace NetworkingLibrary
 
         void EstablishConnection(string ip)
         {
-            byte[] data = Encoding.ASCII.GetBytes($"REQUEST/id={id}/isHost={isHost}/isServer={isServer}");
+            byte[] data = Encoding.ASCII.GetBytes($"{protocolID}/REQUEST/id={id}/isHost={isHost}/isServer={isServer}");
             Packet connectionPacket = new Packet(ip, this.ip, port, data, PacketType.CONNECT);
             PacketManager.SendPacket(connectionPacket, ref socket);
-            PacketManager.StartReceiving(ref socket);
+            PacketManager.StartReceiving(ref socket, networkManager);
         }
     }
 }

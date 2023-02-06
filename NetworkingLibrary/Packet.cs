@@ -65,6 +65,13 @@ namespace NetworkingLibrary
         string ipSource;
         int port;
 
+        public Packet(PacketType packetType, string ipSource, byte[] data)
+        {
+            this.packetType = packetType;
+            this.ipSource = ipSource;
+            this.data = data;
+        }
+
         public Packet(string ipDestination, string ipSource, int port, byte[] data, PacketType packetType) 
         {
             this.ipDestination = ipDestination;
