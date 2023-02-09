@@ -14,7 +14,7 @@ namespace NetworkingLibrary
         int port;
         int protocolID;
 
-        List<Connection> connections;
+        //List<Connection> connections;
         Socket socket;
 
         NetworkManager networkManager;
@@ -33,37 +33,51 @@ namespace NetworkingLibrary
             port = networkManager.Port;
             protocolID = networkManager.ProtocolID;
 
-            // Get all client IDs
-            List<int> clientIDs = new List<int>();
-            if (otherClients != null)
-            {
-                for (int i = 0; i < otherClients.Count(); i++)
-                {
-                    if (otherClients[i] != null)
-                    {
-                        clientIDs.Add(otherClients[i].ID);
-                    }
-                }
-            }
-
             if (isLocalClient)
             {
                 socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
                 // Socket will listen to packets from all IP addresses
                 socket.Bind(new IPEndPoint(IPAddress.Any, port));
-            }
 
-            // Generate unique ID for client
-            id = GenerateClientID(clientIDs);
+                // Get all client IDs
+                List<int> clientIDs = new List<int>();
+                if (otherClients != null)
+                {
+                    for (int i = 0; i < otherClients.Count(); i++)
+                    {
+                        if (otherClients[i] != null)
+                        {
+                            clientIDs.Add(otherClients[i].ID);
+                        }
+                    }
+                }
+
+                // Generate unique ID for client
+                id = GenerateClientID(clientIDs);
+            }
 
             this.isServer = isServer;
             this.ip = ip;
             this.isHost = isHost;
 
-            connections = new List<Connection>();
+            //connections = new List<Connection>();
+        }
 
-            EstablishConnection(ip);
+        public Client(string ip, bool isHost, bool isServer, int id, NetworkManager networkManager)
+        {
+            this.networkManager = networkManager;
+            List<Client> otherClients = networkManager.RemoteClients;
+
+            port = networkManager.Port;
+            protocolID = networkManager.ProtocolID;
+
+            this.isServer = isServer;
+            this.ip = ip;
+            this.isHost = isHost;
+            this.id = id;
+
+            //connections = new List<Connection>();
         }
 
         public int ID
@@ -71,10 +85,12 @@ namespace NetworkingLibrary
             get { return id; }
         }
 
+        /*
         public List<Connection> Connections
         {
             get { return connections; }
         }
+        */
 
         public string IP
         {
@@ -100,12 +116,19 @@ namespace NetworkingLibrary
             return id;
         }
 
-        void EstablishConnection(string ip)
+        internal void RequestConnection(string ip)
         {
             byte[] data = Encoding.ASCII.GetBytes($"{protocolID}/REQUEST/id={id}/isHost={isHost}/isServer={isServer}");
             Packet connectionPacket = new Packet(ip, this.ip, port, data, PacketType.CONNECT);
-            PacketManager.SendPacket(connectionPacket, ref socket);
-            PacketManager.StartReceiving(ref socket, networkManager);
+            networkManager.PacketManager.SendPacket(connectionPacket, ref socket);
+            networkManager.PacketManager.StartReceiving(ref socket, networkManager);
+        }
+
+        internal void AcceptConnection(string ip)
+        {
+            byte[] data = Encoding.ASCII.GetBytes($"{protocolID}/ACCEPT/id={id}/isHost={isHost}/isServer={isServer}");
+            Packet acceptPacket = new Packet(ip, this.ip, port, data, PacketType.ACCEPT);
+            networkManager.PacketManager.SendPacket(acceptPacket, ref socket);
         }
     }
 }

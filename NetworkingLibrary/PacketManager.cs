@@ -9,16 +9,23 @@ using System.Threading.Tasks;
 
 namespace NetworkingLibrary
 {
-    internal static class PacketManager
+    internal class PacketManager
     {
-        static List<Packet> packetQueue;
+        List<Packet> packetQueue;
+        NetworkManager networkManager;
+
+        public PacketManager(NetworkManager networkManager)
+        {
+            packetQueue = new List<Packet>();
+            this.networkManager = networkManager;
+        }
 
         internal static void ProcessPacket(Packet packet)
         {
             // Process the byte array of packet in packetQueue
         }
 
-        internal static void StartReceiving(ref Socket socket, NetworkManager networkManager)
+        internal void StartReceiving(ref Socket socket, NetworkManager networkManager)
         {
             byte[] buffer = new byte[1024];
 
@@ -32,7 +39,7 @@ namespace NetworkingLibrary
             }, socket);
         }
 
-        private static void ReceiveCallback(IAsyncResult result, byte[] data, NetworkManager networkManager)
+        private void ReceiveCallback(IAsyncResult result, byte[] data, NetworkManager networkManager)
         {
             Socket socket = (Socket)result.AsyncState;
 
@@ -48,43 +55,29 @@ namespace NetworkingLibrary
             // Check if packet belongs to game by checking IP address against current connections, or checking if the protocol ID is a match
             List<string> addresses = networkManager.GetConnectedAddresses();
             string output = Encoding.ASCII.GetString(data);
-            string[] split = output.Split(new char[] {'/'});
+            string[] split = output.Split('/');
             int protocolID = int.Parse(split[0]);
-            //int protocolID = int.Parse(Encoding.ASCII.GetString(data, 0, 4));
 
             if (addresses.Contains(remoteIP.Address.ToString()))
             {
                 // Packet belongs to game
-
-                // Construct packet object from byte[]
+                ConstructPacketFromByteArray(data, remoteIP.Address.ToString());
             }
             else if (protocolID == networkManager.ProtocolID)
             {
                 // Packet belongs to game
-
-                // Construct packet object from byte[]
-                Packet packet = ConstructPacketFromByteArray(data, remoteIP.Address.ToString());
+                ConstructPacketFromByteArray(data, remoteIP.Address.ToString());
             }
-            else
-            {
-                // Packet does not belong to game
-
-                // Ignore packet
-            }
-
-            // If packet does not belong to game, discard it and restart receive
-
-            // IF packet belongs to game, add to packetqueue and restart receive
 
             StartReceiving(ref socket, networkManager);
         }
 
-        internal static void ReceivePacket(ref Socket socket)
+        internal void ReceivePacket(ref Socket socket)
         {
             // Constructs a custom packet object based on the byte array it received and adds it to the packetqueue
         }
 
-        internal static void SendPacket(Packet packet, ref Socket socket)
+        internal void SendPacket(Packet packet, ref Socket socket)
         {
             // Send a packet to it's destination
             IPEndPoint destination = new IPEndPoint(IPAddress.Parse(packet.IPDestination), packet.Port);
@@ -96,7 +89,7 @@ namespace NetworkingLibrary
             }, socket);
         }
 
-        private static void SendCallback(IAsyncResult result, IPEndPoint remoteEP)
+        private void SendCallback(IAsyncResult result, IPEndPoint remoteEP)
         {
             try
             {
@@ -110,21 +103,32 @@ namespace NetworkingLibrary
             }
         }
 
-        private static Packet ConstructPacketFromByteArray(byte[] data, string sourceIP)
+        private void ConstructPacketFromByteArray(byte[] data, string sourceIP)
         {
             string payload = Encoding.ASCII.GetString(data, 0, data.Length);
 
-            string[] split = payload.Split(new char[] { '/' });
+            string[] split = payload.Split('/');
 
             PacketType packetType;
 
             if (split[1] == "REQUEST")
             {
                 // Connection packet
-                return new Packet(PacketType.CONNECT, sourceIP, data);
-            }
 
-            return null;
+                // Begin establishing connection
+                Packet packet = new Packet(PacketType.CONNECT, sourceIP, data);
+
+                networkManager.ConnectionRequest(packet);
+            }
+            else if (split[1] == "ACCEPT")
+            {
+                // Connection accept packet
+
+                // Create accept packet and pass to network manager
+                Packet packet = new Packet(PacketType.ACCEPT, sourceIP, data);
+
+                networkManager.ConnectionAccept(packet);
+            }
         }
     }
 }

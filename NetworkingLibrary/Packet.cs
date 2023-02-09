@@ -48,9 +48,10 @@ namespace NetworkingLibrary
         STANDARD,
         CONNECT,
         DISCONNECT,
+        ACCEPT,
     }
 
-    internal class Packet
+    public class Packet
     {
         byte[] data;
         byte[] compressedData;
