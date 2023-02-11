@@ -62,6 +62,8 @@ namespace NetworkingLibrary
             this.isHost = isHost;
 
             //connections = new List<Connection>();
+
+            networkManager.PacketManager.StartReceiving(ref socket, networkManager);
         }
 
         public Client(string ip, bool isHost, bool isServer, int id, NetworkManager networkManager)
@@ -121,7 +123,7 @@ namespace NetworkingLibrary
             byte[] data = Encoding.ASCII.GetBytes($"{protocolID}/REQUEST/id={id}/isHost={isHost}/isServer={isServer}");
             Packet connectionPacket = new Packet(ip, this.ip, port, data, PacketType.CONNECT);
             networkManager.PacketManager.SendPacket(connectionPacket, ref socket);
-            networkManager.PacketManager.StartReceiving(ref socket, networkManager);
+            //networkManager.PacketManager.StartReceiving(ref socket, networkManager);
         }
 
         internal void AcceptConnection(string ip)

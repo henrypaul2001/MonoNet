@@ -16,7 +16,7 @@ namespace NetworkingLibrary
         CLIENT_SERVER,
         DEDICATED_SERVER
     }
-
+    // 192.168.1.18
     public abstract class NetworkManager
     {
         // List representing currently connected clients
@@ -66,7 +66,7 @@ namespace NetworkingLibrary
                 }
                 localClient = new Client(localIP, false, false, true, this);
 
-                localClient.RequestConnection(localIP);
+                //localClient.RequestConnection(localIP);
             }
         }
 
@@ -104,7 +104,12 @@ namespace NetworkingLibrary
             get { return packetManager; }
         }
 
-        public virtual void ConnectionRequest(Packet connectionPacket)
+        public void ConnectLocalClientToHost(string ip)
+        {
+            localClient.RequestConnection(ip);
+        }
+
+        public virtual void HandleConnectionRequest(Packet connectionPacket)
         {
             string data = Encoding.ASCII.GetString(connectionPacket.Data);
             string[] split = data.Split('/');
@@ -141,7 +146,7 @@ namespace NetworkingLibrary
             localClient.AcceptConnection(connectionPacket.IPSource);
         }
 
-        public virtual void ConnectionAccept(Packet acceptPacket)
+        public virtual void HandleConnectionAccept(Packet acceptPacket)
         {
             string data = Encoding.ASCII.GetString(acceptPacket.Data);
             string[] split = data.Split('/');
@@ -211,6 +216,7 @@ namespace NetworkingLibrary
                 // Create connection
                 Connection connection = new Connection(localClient, remoteClient);
                 connections.Add(connection);
+                Console.WriteLine($"Connection created between local: {localClient.IP} and remote: {remoteClient.IP}");
 
                 // Send connection accept back to remote client
                 localClient.AcceptConnection(remoteClient.IP);

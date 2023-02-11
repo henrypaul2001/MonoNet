@@ -118,7 +118,7 @@ namespace NetworkingLibrary
                 // Begin establishing connection
                 Packet packet = new Packet(PacketType.CONNECT, sourceIP, data);
 
-                networkManager.ConnectionRequest(packet);
+                networkManager.HandleConnectionRequest(packet);
             }
             else if (split[1] == "ACCEPT")
             {
@@ -127,7 +127,7 @@ namespace NetworkingLibrary
                 // Create accept packet and pass to network manager
                 Packet packet = new Packet(PacketType.ACCEPT, sourceIP, data);
 
-                networkManager.ConnectionAccept(packet);
+                networkManager.HandleConnectionAccept(packet);
             }
         }
     }
