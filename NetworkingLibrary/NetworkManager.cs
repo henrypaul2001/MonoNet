@@ -190,7 +190,7 @@ namespace NetworkingLibrary
             for (int i = 0; i < remoteConnectionsNum; i++)
             {
                 string remoteIP = split[6 + i].Substring(split[6 + i].IndexOf("=") + 1);
-                if (!pendingConnectionAddresses.Contains(remoteIP) && !currentConnectionAddresses.Contains(remoteIP))
+                if (!pendingConnectionAddresses.Contains(remoteIP) && !currentConnectionAddresses.Contains(remoteIP) && remoteIP != localClient.IP)
                 {
                     localClient.RequestConnection(remoteIP);
                 }

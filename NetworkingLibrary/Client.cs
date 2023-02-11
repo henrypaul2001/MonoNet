@@ -142,6 +142,8 @@ namespace NetworkingLibrary
                 payload += $"/connection{i}IP={otherClients[i].IP}";
             }
 
+            payload += "/END";
+
             byte[] data = Encoding.ASCII.GetBytes(payload);
             Packet acceptPacket = new Packet(ip, this.ip, port, data, PacketType.ACCEPT);
             networkManager.PacketManager.SendPacket(acceptPacket, ref socket);
