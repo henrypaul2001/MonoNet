@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NetworkingLibrary
@@ -128,7 +129,20 @@ namespace NetworkingLibrary
 
         internal void AcceptConnection(string ip)
         {
-            byte[] data = Encoding.ASCII.GetBytes($"{protocolID}/ACCEPT/id={id}/isHost={isHost}/isServer={isServer}");
+            List<Client> otherClients = networkManager.RemoteClients;
+            int connectionNum = 0;
+            if (otherClients != null)
+            {
+                connectionNum = otherClients.Count;
+            }
+            string payload = ($"{protocolID}/ACCEPT/id={id}/isHost={isHost}/isServer={isServer}/connectionNum={connectionNum}");
+
+            for (int i = 0; i < connectionNum; i++)
+            {
+                payload += $"/connection{i}IP={otherClients[i].IP}";
+            }
+
+            byte[] data = Encoding.ASCII.GetBytes(payload);
             Packet acceptPacket = new Packet(ip, this.ip, port, data, PacketType.ACCEPT);
             networkManager.PacketManager.SendPacket(acceptPacket, ref socket);
         }

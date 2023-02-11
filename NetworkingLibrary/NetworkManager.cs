@@ -48,7 +48,7 @@ namespace NetworkingLibrary
             packetManager = new PacketManager(this);
 
             pendingClients = new List<Client>();
-            //remoteClients = new List<Client>();
+            remoteClients = new List<Client>();
             connections = new List<Connection>();
 
             if (this.connectionType == ConnectionType.PEER_TO_PEER)
@@ -176,6 +176,26 @@ namespace NetworkingLibrary
                 remoteIsServer = false;
             }
 
+            int remoteConnectionsNum;
+            bool parseConnectionsNum = int.TryParse(split[5].Substring(split[5].IndexOf('=') + 1), out remoteConnectionsNum);
+            if (!parseConnectionsNum)
+            {
+                Console.WriteLine("Error parsing remoteConnectionsNum, value set to 0");
+                remoteConnectionsNum = 0;
+            }
+
+            // Connect to any additional peers
+            List<string> currentConnectionAddresses = GetConnectedAddresses();
+            List<string> pendingConnectionAddresses = GetPendingAddresses();
+            for (int i = 0; i < remoteConnectionsNum; i++)
+            {
+                string remoteIP = split[6 + i].Substring(split[6 + i].IndexOf("=") + 1);
+                if (!pendingConnectionAddresses.Contains(remoteIP) && !currentConnectionAddresses.Contains(remoteIP))
+                {
+                    localClient.RequestConnection(remoteIP);
+                }
+            }
+
             // Get IDs belonging to currently pending clients
             List<int> pendingClientIDs = new List<int>();
             foreach (Client client in pendingClients)
@@ -198,6 +218,8 @@ namespace NetworkingLibrary
                     }
                 }
 
+                remoteClients.Add(remoteClient);
+
                 // Create connection
                 Connection connection = new Connection(localClient, remoteClient);
                 connections.Add(connection);
@@ -212,6 +234,7 @@ namespace NetworkingLibrary
 
                 // Create remote client
                 Client remoteClient = new Client(acceptPacket.IPSource, remoteIsHost, remoteIsServer, remoteID, this);
+                remoteClients.Add(remoteClient);
 
                 // Create connection
                 Connection connection = new Connection(localClient, remoteClient);
@@ -261,6 +284,21 @@ namespace NetworkingLibrary
                 }
             }
 
+            return addresses;
+        }
+
+        public List<string> GetPendingAddresses()
+        {
+            List<string> addresses = new List<string>();
+
+            if (pendingClients != null)
+            {
+                foreach (Client client in pendingClients)
+                {
+                    addresses.Add(client.IP);
+                }
+            }
+            
             return addresses;
         }
     }
