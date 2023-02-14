@@ -64,20 +64,22 @@ namespace NetworkingLibrary
 
         string ipDestination;
         string ipSource;
-        int port;
+        int portSource;
+        int portDestination;
 
-        public Packet(PacketType packetType, string ipSource, byte[] data)
+        public Packet(PacketType packetType, string ipSource, int portSource, byte[] data)
         {
             this.packetType = packetType;
             this.ipSource = ipSource;
             this.data = data;
+            this.portSource = portSource;
         }
 
-        public Packet(string ipDestination, string ipSource, int port, byte[] data, PacketType packetType) 
+        public Packet(string ipDestination, string ipSource, int portDestination, byte[] data, PacketType packetType) 
         {
             this.ipDestination = ipDestination;
             this.ipSource = ipSource;
-            this.port = port;
+            this.portDestination = portDestination;
             this.data = data;
             this.packetType = packetType;
 
@@ -94,9 +96,14 @@ namespace NetworkingLibrary
             get { return ipSource; }
         }
 
-        public int Port
+        public int PortSource
         {
-            get { return port; }
+            get { return portSource; }
+        }
+
+        public int PortDestination
+        {
+            get { return portDestination; }
         }
 
         public byte[] Data

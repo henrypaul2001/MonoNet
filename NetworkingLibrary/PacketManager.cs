@@ -61,12 +61,12 @@ namespace NetworkingLibrary
             if (addresses.Contains(remoteIP.Address.ToString()))
             {
                 // Packet belongs to game
-                ConstructPacketFromByteArray(data, remoteIP.Address.ToString());
+                ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
             }
             else if (protocolID == networkManager.ProtocolID)
             {
                 // Packet belongs to game
-                ConstructPacketFromByteArray(data, remoteIP.Address.ToString());
+                ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
             }
 
             StartReceiving(ref socket, networkManager);
@@ -80,7 +80,7 @@ namespace NetworkingLibrary
         internal void SendPacket(Packet packet, ref Socket socket)
         {
             // Send a packet to it's destination
-            IPEndPoint destination = new IPEndPoint(IPAddress.Parse(packet.IPDestination), packet.Port);
+            IPEndPoint destination = new IPEndPoint(IPAddress.Parse(packet.IPDestination), packet.PortDestination);
 
             socket.BeginSendTo(packet.CompressedData, 0, packet.CompressedData.Length, SocketFlags.None, destination, result =>
             {
@@ -103,7 +103,7 @@ namespace NetworkingLibrary
             }
         }
 
-        private void ConstructPacketFromByteArray(byte[] data, string sourceIP)
+        private void ConstructPacketFromByteArray(byte[] data, string sourceIP, int sourcePort)
         {
             string payload = Encoding.ASCII.GetString(data, 0, data.Length);
 
@@ -116,7 +116,7 @@ namespace NetworkingLibrary
                 // Connection packet
 
                 // Begin establishing connection
-                Packet packet = new Packet(PacketType.CONNECT, sourceIP, data);
+                Packet packet = new Packet(PacketType.CONNECT, sourceIP, sourcePort, data);
 
                 networkManager.HandleConnectionRequest(packet);
             }
@@ -125,7 +125,7 @@ namespace NetworkingLibrary
                 // Connection accept packet
 
                 // Create accept packet and pass to network manager
-                Packet packet = new Packet(PacketType.ACCEPT, sourceIP, data);
+                Packet packet = new Packet(PacketType.ACCEPT, sourceIP, sourcePort, data);
 
                 networkManager.HandleConnectionAccept(packet);
             }

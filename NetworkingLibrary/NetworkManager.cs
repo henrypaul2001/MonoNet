@@ -104,9 +104,9 @@ namespace NetworkingLibrary
             get { return packetManager; }
         }
 
-        public void ConnectLocalClientToHost(string ip)
+        public void ConnectLocalClientToHost(string ip, int port)
         {
-            localClient.RequestConnection(ip);
+            localClient.RequestConnection(ip, port);
         }
 
         public virtual void HandleConnectionRequest(Packet connectionPacket)
@@ -138,12 +138,12 @@ namespace NetworkingLibrary
                 remoteIsServer = false;
             }
 
-            Client remoteClient = new Client(connectionPacket.IPSource, remoteIsHost, remoteIsServer, remoteID, this);
+            Client remoteClient = new Client(connectionPacket.IPSource, connectionPacket.PortSource, remoteIsHost, remoteIsServer, remoteID, this);
             
             pendingClients.Add(remoteClient);
 
             // Send connection accept to remote client
-            localClient.AcceptConnection(connectionPacket.IPSource);
+            localClient.AcceptConnection(connectionPacket);
         }
 
         public virtual void HandleConnectionAccept(Packet acceptPacket)
@@ -187,12 +187,13 @@ namespace NetworkingLibrary
             // Connect to any additional peers
             List<string> currentConnectionAddresses = GetConnectedAddresses();
             List<string> pendingConnectionAddresses = GetPendingAddresses();
-            for (int i = 0; i < remoteConnectionsNum; i++)
+            for (int i = 0; i < remoteConnectionsNum * 2; i += 2)
             {
                 string remoteIP = split[6 + i].Substring(split[6 + i].IndexOf("=") + 1);
-                if (!pendingConnectionAddresses.Contains(remoteIP) && !currentConnectionAddresses.Contains(remoteIP) && remoteIP != localClient.IP)
+                string remotePort = split[6 + i + 1].Substring(split[6 + i + 1].IndexOf("=") + 1);
+                if (!pendingConnectionAddresses.Contains(remoteIP) && !currentConnectionAddresses.Contains(remoteIP) && int.Parse(remotePort) != localClient.Port)
                 {
-                    localClient.RequestConnection(remoteIP);
+                    localClient.RequestConnection(remoteIP, int.Parse(remotePort));
                 }
             }
 
@@ -223,7 +224,7 @@ namespace NetworkingLibrary
                 // Create connection
                 Connection connection = new Connection(localClient, remoteClient);
                 connections.Add(connection);
-                Console.WriteLine($"Connection created between local: {localClient.IP} and remote: {remoteClient.IP}");
+                Console.WriteLine($"Connection created between local: {localClient.IP} {localClient.Port} and remote: {remoteClient.IP} {remoteClient.Port}");
 
                 // Remove remote client from pending list
                 pendingClients.Remove(remoteClient);
@@ -233,16 +234,16 @@ namespace NetworkingLibrary
                 // If false, the current code path is being run on the client that sent the initial connection request
 
                 // Create remote client
-                Client remoteClient = new Client(acceptPacket.IPSource, remoteIsHost, remoteIsServer, remoteID, this);
+                Client remoteClient = new Client(acceptPacket.IPSource, acceptPacket.PortSource, remoteIsHost, remoteIsServer, remoteID, this);
                 remoteClients.Add(remoteClient);
 
                 // Create connection
                 Connection connection = new Connection(localClient, remoteClient);
                 connections.Add(connection);
-                Console.WriteLine($"Connection created between local: {localClient.IP} and remote: {remoteClient.IP}");
+                Console.WriteLine($"Connection created between local: {localClient.IP} {localClient.Port} and remote: {remoteClient.IP} {remoteClient.Port}");
 
                 // Send connection accept back to remote client
-                localClient.AcceptConnection(remoteClient.IP);
+                localClient.AcceptConnection(acceptPacket);
             }
         }
 

@@ -67,18 +67,18 @@ namespace NetworkingLibrary
             networkManager.PacketManager.StartReceiving(ref socket, networkManager);
         }
 
-        public Client(string ip, bool isHost, bool isServer, int id, NetworkManager networkManager)
+        public Client(string ip, int port, bool isHost, bool isServer, int id, NetworkManager networkManager)
         {
             this.networkManager = networkManager;
             List<Client> otherClients = networkManager.RemoteClients;
 
-            port = networkManager.Port;
             protocolID = networkManager.ProtocolID;
 
             this.isServer = isServer;
             this.ip = ip;
             this.isHost = isHost;
             this.id = id;
+            this.port = port;
 
             //connections = new List<Connection>();
         }
@@ -106,6 +106,11 @@ namespace NetworkingLibrary
             set { isHost = value; }
         }
 
+        public int Port
+        {
+            get { return port; }
+        }
+
         int GenerateClientID(List<int> excludedIDs)
         {
             int id;
@@ -119,16 +124,19 @@ namespace NetworkingLibrary
             return id;
         }
 
-        internal void RequestConnection(string ip)
+        internal void RequestConnection(string ip, int portDestination)
         {
             byte[] data = Encoding.ASCII.GetBytes($"{protocolID}/REQUEST/id={id}/isHost={isHost}/isServer={isServer}");
-            Packet connectionPacket = new Packet(ip, this.ip, port, data, PacketType.CONNECT);
+            Packet connectionPacket = new Packet(ip, this.ip, portDestination, data, PacketType.CONNECT);
             networkManager.PacketManager.SendPacket(connectionPacket, ref socket);
             //networkManager.PacketManager.StartReceiving(ref socket, networkManager);
         }
 
-        internal void AcceptConnection(string ip)
+        internal void AcceptConnection(Packet connectionPacket)
         {
+            string ip = connectionPacket.IPSource;
+            int destinationPort = connectionPacket.PortSource;
+
             List<Client> otherClients = networkManager.RemoteClients;
             int connectionNum = 0;
             if (otherClients != null)
@@ -140,13 +148,15 @@ namespace NetworkingLibrary
             for (int i = 0; i < connectionNum; i++)
             {
                 payload += $"/connection{i}IP={otherClients[i].IP}";
+                payload += $"/connection{i}Port={otherClients[i].port}";
             }
 
             payload += "/END";
 
             byte[] data = Encoding.ASCII.GetBytes(payload);
-            Packet acceptPacket = new Packet(ip, this.ip, port, data, PacketType.ACCEPT);
+            Packet acceptPacket = new Packet(ip, this.ip, destinationPort, data, PacketType.ACCEPT);
             networkManager.PacketManager.SendPacket(acceptPacket, ref socket);
+            //networkManager.PacketManager.StartReceiving(ref socket, networkManager);
         }
     }
 }
