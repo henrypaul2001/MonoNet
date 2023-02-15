@@ -50,7 +50,7 @@ namespace NetworkingLibrary
 
             IPEndPoint remoteIP = (IPEndPoint)remoteEP;
 
-            Console.WriteLine($"{bytesReceived} bytes received from IP: {remoteIP.Address}");
+            Debug.WriteLine($"{bytesReceived} bytes received from IP: {remoteIP.Address}");
 
             // Check if packet belongs to game by checking IP address against current connections, or checking if the protocol ID is a match
             List<string> addresses = networkManager.GetConnectedAddresses();
@@ -95,11 +95,11 @@ namespace NetworkingLibrary
             {
                 Socket socket = (Socket)result.AsyncState;
                 int bytesSent = socket.EndSend(result);
-                Console.WriteLine("Sent {0} bytes to {1}", bytesSent, remoteEP.Address);
+                Debug.WriteLine("Sent {0} bytes to {1}", bytesSent, remoteEP.Address);
 
             } catch (Exception e)
             {
-                Console.WriteLine($"Error sending packet: {e}");
+                Debug.WriteLine($"Error sending packet: {e}");
             }
         }
 

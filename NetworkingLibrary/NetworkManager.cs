@@ -156,7 +156,7 @@ namespace NetworkingLibrary
             bool parseRemoteID = int.TryParse(split[2].Substring(split[2].IndexOf('=') + 1), out remoteID);
             if (!parseRemoteID)
             {
-                Console.WriteLine("Error parsing remoteID, id set to 1000");
+                Debug.WriteLine("Error parsing remoteID, id set to 1000");
                 remoteID = 1000;
             }
 
@@ -164,7 +164,7 @@ namespace NetworkingLibrary
             bool parseHostBool = bool.TryParse(split[3].Substring(split[3].IndexOf('=') + 1), out remoteIsHost);
             if (!parseHostBool)
             {
-                Console.WriteLine("Error parsing remoteIsHost, value set to false");
+                Debug.WriteLine("Error parsing remoteIsHost, value set to false");
                 remoteIsHost = false;
             }
 
@@ -172,7 +172,7 @@ namespace NetworkingLibrary
             bool parseServerBool = bool.TryParse(split[4].Substring(split[4].IndexOf('=') + 1), out remoteIsServer);
             if (!parseServerBool)
             {
-                Console.WriteLine("Error parsing remoteIsServer, value set to false");
+                Debug.WriteLine("Error parsing remoteIsServer, value set to false");
                 remoteIsServer = false;
             }
 
@@ -180,7 +180,7 @@ namespace NetworkingLibrary
             bool parseConnectionsNum = int.TryParse(split[5].Substring(split[5].IndexOf('=') + 1), out remoteConnectionsNum);
             if (!parseConnectionsNum)
             {
-                Console.WriteLine("Error parsing remoteConnectionsNum, value set to 0");
+                Debug.WriteLine("Error parsing remoteConnectionsNum, value set to 0");
                 remoteConnectionsNum = 0;
             }
 
@@ -224,7 +224,7 @@ namespace NetworkingLibrary
                 // Create connection
                 Connection connection = new Connection(localClient, remoteClient);
                 connections.Add(connection);
-                Console.WriteLine($"Connection created between local: {localClient.IP} {localClient.Port} and remote: {remoteClient.IP} {remoteClient.Port}");
+                Debug.WriteLine($"Connection created between local: {localClient.IP} {localClient.Port} and remote: {remoteClient.IP} {remoteClient.Port}");
 
                 // Remove remote client from pending list
                 pendingClients.Remove(remoteClient);
@@ -240,7 +240,7 @@ namespace NetworkingLibrary
                 // Create connection
                 Connection connection = new Connection(localClient, remoteClient);
                 connections.Add(connection);
-                Console.WriteLine($"Connection created between local: {localClient.IP} {localClient.Port} and remote: {remoteClient.IP} {remoteClient.Port}");
+                Debug.WriteLine($"Connection created between local: {localClient.IP} {localClient.Port} and remote: {remoteClient.IP} {remoteClient.Port}");
 
                 // Send connection accept back to remote client
                 localClient.AcceptConnection(acceptPacket);
