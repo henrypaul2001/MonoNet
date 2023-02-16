@@ -45,7 +45,7 @@ namespace NetworkingLibrary
     
     public enum PacketType
     {
-        STANDARD,
+        SYNC,
         CONNECT,
         DISCONNECT,
         ACCEPT,
@@ -82,6 +82,19 @@ namespace NetworkingLibrary
             this.portDestination = portDestination;
             this.data = data;
             this.packetType = packetType;
+
+            CompressData();
+        }
+
+        public Packet(PacketType packetType, int sequence, int ack, AckBitfield ackBitfield, byte[] data, string ipDestination, int portDestination)
+        {
+            this.packetType = packetType;
+            this.sequence = sequence;
+            this.ack = ack;
+            this.ackBitfield = ackBitfield;
+            this.data = data;
+            this.ipDestination = ipDestination;
+            this.portDestination = portDestination;
 
             CompressData();
         }

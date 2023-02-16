@@ -9,10 +9,19 @@ namespace NetworkingLibrary
     public abstract class Networked_GameObject
     {
         NetworkManager networkManager;
+        int clientID;
 
-        public Networked_GameObject(ref NetworkManager networkManager)
+        public Networked_GameObject(NetworkManager networkManager, int clientID)
         {
             this.networkManager = networkManager;
+            this.clientID = clientID;
+
+            networkManager.NetworkedObjects.Add(this);
+        }
+
+        public int ClientID
+        {
+            get { return clientID; }
         }
 
         /*

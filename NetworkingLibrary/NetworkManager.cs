@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using System.Net;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Reflection;
 
 namespace NetworkingLibrary
 {
@@ -16,9 +17,12 @@ namespace NetworkingLibrary
         CLIENT_SERVER,
         DEDICATED_SERVER
     }
-    // 192.168.1.18
+
     public abstract class NetworkManager
     {
+        // List representing networked game objects that need to be synced
+        List<Networked_GameObject> networkedObjects;
+
         // List representing currently connected clients
         List<Client> remoteClients;
 
@@ -50,6 +54,7 @@ namespace NetworkingLibrary
             pendingClients = new List<Client>();
             remoteClients = new List<Client>();
             connections = new List<Connection>();
+            networkedObjects = new List<Networked_GameObject>();
 
             if (this.connectionType == ConnectionType.PEER_TO_PEER)
             {
@@ -65,8 +70,6 @@ namespace NetworkingLibrary
                     }
                 }
                 localClient = new Client(localIP, false, false, true, this);
-
-                //localClient.RequestConnection(localIP);
             }
         }
 
@@ -74,6 +77,7 @@ namespace NetworkingLibrary
         {
             get { return localClient; }
         }
+
         public List<Client> RemoteClients
         {
             get { return remoteClients; }
@@ -82,6 +86,11 @@ namespace NetworkingLibrary
         public List<Client> PendingClients
         {
             get { return pendingClients; }
+        }
+
+        public List<Networked_GameObject> NetworkedObjects
+        {
+            get { return networkedObjects; }
         }
 
         public ConnectionType ConnectionType
@@ -102,6 +111,29 @@ namespace NetworkingLibrary
         internal PacketManager PacketManager
         {
             get { return packetManager; }
+        }
+
+        public void SendGameState()
+        {
+            string payload = $"/SYNC/id={localClient.ID}/VARSTART/";
+            for (int i = 0; i < networkedObjects.Count; i++)
+            {
+                // Find all networked variables using reflection
+                var type = networkedObjects[i].GetType();
+                var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance).Where(f => f.IsDefined(typeof(NetworkedVariable), false));
+                foreach ( var field in fields )
+                {
+                    payload += $"{field.Name}={field.GetValue(networkedObjects[i])}/";
+                }
+                payload += "VAREND/";
+
+                for (int j = 0; j < connections.Count; j++)
+                {
+                    // Construct packet
+
+                    // Send packet
+                }
+            }
         }
 
         public void ConnectLocalClientToHost(string ip, int port)

@@ -44,7 +44,7 @@
     <Compile Include="Client.cs" />
     <Compile Include="Connection.cs" />
     <Compile Include="NetworkedVariable.cs" />
-    <Compile Include="Networked_GameObjct.cs" />
+    <Compile Include="Networked_GameObject.cs" />
     <Compile Include="NetworkManager.cs" />
     <Compile Include="Packet.cs" />
     <Compile Include="PacketManager.cs" />
