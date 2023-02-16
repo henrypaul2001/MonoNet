@@ -225,6 +225,7 @@ namespace NetworkingLibrary
                 Connection connection = new Connection(localClient, remoteClient);
                 connections.Add(connection);
                 Debug.WriteLine($"Connection created between local: {localClient.IP} {localClient.Port} and remote: {remoteClient.IP} {remoteClient.Port}");
+                ConnectionEstablished(connection);
 
                 // Remove remote client from pending list
                 pendingClients.Remove(remoteClient);
@@ -241,11 +242,14 @@ namespace NetworkingLibrary
                 Connection connection = new Connection(localClient, remoteClient);
                 connections.Add(connection);
                 Debug.WriteLine($"Connection created between local: {localClient.IP} {localClient.Port} and remote: {remoteClient.IP} {remoteClient.Port}");
+                ConnectionEstablished(connection);
 
                 // Send connection accept back to remote client
                 localClient.AcceptConnection(acceptPacket);
             }
         }
+
+        public abstract void ConnectionEstablished(Connection connection);
 
         public virtual void ClientDisconnect()
         {
