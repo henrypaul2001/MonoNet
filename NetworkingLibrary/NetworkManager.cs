@@ -8,6 +8,8 @@ using System.Net;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Reflection;
+using System.Collections.Specialized;
+using System.CodeDom;
 
 namespace NetworkingLibrary
 {
@@ -115,38 +117,111 @@ namespace NetworkingLibrary
 
         public void SendGameState()
         {
-            string payload = $"id={localClient.ID}/VARSTART/";
             for (int i = 0; i < networkedObjects.Count; i++)
             {
-                // Find all networked variables using reflection
-                var type = networkedObjects[i].GetType();
-                var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic).Where(f => f.IsDefined(typeof(NetworkedVariable), false));
-                foreach ( var field in fields )
+                // Should only send data about local networked objects, instead of relaying information about remote objects back to their original clients
+                if (networkedObjects[i].IsLocal)
                 {
-                    payload += $"{field.Name}={field.GetValue(networkedObjects[i])}/";
-                }
-                payload += "VAREND/";
+                    string payload = $"id={localClient.ID}/objID={networkedObjects[i].ObjectID}/VARSTART/";
 
-                Packet packet;
-                for (int j = 0; j < connections.Count; j++)
-                {
-                    // Construct packet
-                    int localSequence = connections[j].LocalSequence;
-                    int remoteSequence = connections[j].RemoteSequence;
-                    AckBitfield ackBitfield = connections[j].GenerateAckBitfield();
+                    // Find all networked variables using reflection
+                    var type = networkedObjects[i].GetType();
+                    var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic).Where(f => f.IsDefined(typeof(NetworkedVariable), false));
+                    foreach (var field in fields)
+                    {
+                        payload += $"{field.Name}={field.GetValue(networkedObjects[i])}/";
+                    }
+                    payload += "VAREND/";
 
-                    payload = $"{protocolID}/SYNC/{localSequence}/{remoteSequence}/{ackBitfield}/" + payload;
-                    packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, Encoding.ASCII.GetBytes(payload), connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
+                    Packet packet;
+                    for (int j = 0; j < connections.Count; j++)
+                    {
+                        // Construct packet
+                        int localSequence = connections[j].LocalSequence;
+                        int remoteSequence = connections[j].RemoteSequence;
+                        AckBitfield ackBitfield = connections[j].GenerateAckBitfield();
 
-                    // Send packet
-                    packetManager.SendPacket(packet, ref localClient.Socket);
+                        payload = $"{protocolID}/SYNC/{localSequence}/{remoteSequence}/{ackBitfield}/" + payload;
+                        packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, Encoding.ASCII.GetBytes(payload), connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
+
+                        // Send packet
+                        packetManager.SendPacket(packet, ref localClient.Socket);
+                    }
                 }
             }
         }
 
         public void ProcessSyncPacket(Packet syncPacket)
         {
+            string data = Encoding.ASCII.GetString(syncPacket.Data);
+            string[] split = data.Split('/');
 
+            // Retrieve networked variable info from packet
+            int clientID;
+            bool parseClientID = int.TryParse(split[5].Substring(split[5].IndexOf('=') + 1), out clientID);
+            if (!parseClientID)
+            {
+                Console.WriteLine("Error parsing client ID, packet ignored");
+                return;
+            }
+
+            int objectID;
+            bool parseObjectID = int.TryParse(split[6].Substring(split[6].IndexOf('=') + 1), out objectID);
+            if (!parseObjectID)
+            {
+                Console.WriteLine("Error parsing object ID, packet ignored");
+                return;
+            }
+
+            // IN THE FUTURE, THIS NEEDS TO ALSO CREATE A NEW OBJECT IF IT HASN'T ALREADY BEEN CREATED
+            // PASSING THE OBJECT ID IN THE PACKET TO THE OBJECT CONSTRUCTOR. AS OF NOW, AN ASSUMPTION WILL BE MADE
+            // THAT ONLY ONE NETWORKED GAME OBJECT EXISTS PER CLIENT ID. THIS IS BECAUSE OF HOW OBJECT ID'S ARE GENERATED
+            // ...FIX FOR ANOTHER DAY
+
+            //split[7] == "VARSTART" -- signifies the start point of the networked variables in packet
+
+            int varIndex = 0;
+            string currentString;
+            string varName;
+            string varValue;
+            while (true) 
+            {
+                currentString = split[8 + varIndex];
+                if (currentString == "VAREND")
+                {
+                    // Reached end of networked variables
+                    break;
+                }
+                varName = currentString.Substring(0, currentString.IndexOf('='));
+                varValue = currentString.Substring(currentString.IndexOf('=') + 1);
+
+                // Find object corresponding to client ID - SHOULD ALSO USE OBJECT ID IN FUTURE
+                Networked_GameObject obj = GetNetworkedObjectFromClientID(clientID);
+
+                // Set value of the corresponding variable in networked object
+                FieldInfo field = obj.GetType().GetField(varName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (field != null)
+                {
+                    // Convert string value to appropriate type
+                    object value = Convert.ChangeType(varValue, field.FieldType);
+
+                    field.SetValue(obj, value);
+                }
+                varIndex++;
+            }
+        }
+
+        Networked_GameObject GetNetworkedObjectFromClientID(int id)
+        {
+            foreach (Networked_GameObject obj in networkedObjects)
+            {
+                if (obj.ClientID == id)
+                {
+                    return obj;
+                }
+            }
+
+            return null;
         }
 
         public void ConnectLocalClientToHost(string ip, int port)
