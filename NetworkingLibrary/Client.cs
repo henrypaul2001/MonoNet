@@ -83,6 +83,11 @@ namespace NetworkingLibrary
             //connections = new List<Connection>();
         }
 
+        public ref Socket Socket
+        {
+            get { return ref socket; }
+        }
+
         public int ID
         {
             get { return id; }

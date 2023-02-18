@@ -75,6 +75,19 @@ namespace NetworkingLibrary
             this.portSource = portSource;
         }
 
+        public Packet(PacketType packetType, int sequence, int ack, AckBitfield ackBitfield, string ipSource, int portSource, byte[] data)
+        {
+            this.packetType = packetType;
+            this.sequence = sequence;
+            this.ack = ack;
+            this.ackBitfield = ackBitfield;
+            this.data = data;
+            this.ipSource = ipSource;
+            this.portSource = portSource;
+
+            CompressData();
+        }
+
         public Packet(string ipDestination, string ipSource, int portDestination, byte[] data, PacketType packetType) 
         {
             this.ipDestination = ipDestination;

@@ -131,11 +131,22 @@ namespace NetworkingLibrary
                 for (int j = 0; j < connections.Count; j++)
                 {
                     // Construct packet
-                    payload = $"{protocolID}/SYNC/{connections[i].LocalSequence}/{connections[i].RemoteSequence}/" + payload;
-                    packet = new Packet()
+                    int localSequence = connections[j].LocalSequence;
+                    int remoteSequence = connections[j].RemoteSequence;
+                    AckBitfield ackBitfield = connections[j].GenerateAckBitfield();
+
+                    payload = $"{protocolID}/SYNC/{localSequence}/{remoteSequence}/{ackBitfield}/" + payload;
+                    packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, Encoding.ASCII.GetBytes(payload), connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
+
                     // Send packet
+                    packetManager.SendPacket(packet, ref localClient.Socket);
                 }
             }
+        }
+
+        public void ProcessSyncPacket(Packet syncPacket)
+        {
+
         }
 
         public void ConnectLocalClientToHost(string ip, int port)

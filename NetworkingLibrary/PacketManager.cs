@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -117,7 +118,6 @@ namespace NetworkingLibrary
 
                 // Begin establishing connection
                 Packet packet = new Packet(PacketType.CONNECT, sourceIP, sourcePort, data);
-
                 networkManager.HandleConnectionRequest(packet);
             }
             else if (split[1] == "ACCEPT")
@@ -126,8 +126,19 @@ namespace NetworkingLibrary
 
                 // Create accept packet and pass to network manager
                 Packet packet = new Packet(PacketType.ACCEPT, sourceIP, sourcePort, data);
-
                 networkManager.HandleConnectionAccept(packet);
+            }
+            else if (split[1] == "SYNC")
+            {
+                // Synchronisation packet
+
+                // Create sync packet and pass to network manager
+                int localSequence = int.Parse(split[2]);
+                int remoteSequence = int.Parse(split[3]);
+                AckBitfield ackBitfield = (AckBitfield)Enum.Parse(typeof(AckBitfield), split[4]);
+
+                Packet packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, sourceIP, sourcePort, data);
+                networkManager.ProcessSyncPacket(packet);
             }
         }
     }
