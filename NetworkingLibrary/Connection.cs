@@ -15,6 +15,10 @@ namespace NetworkingLibrary
             float latency;
         }
 
+        int[] buffer;
+        int bufferStart;
+        int bufferCount;
+
         Diagnostics diagnostics;
 
         Client localClient;
@@ -22,8 +26,6 @@ namespace NetworkingLibrary
 
         int remoteSequence;
         int localSequence;
-
-        int[] remoteSequenceArray;
 
         public Connection(Client localClient, Client remoteClient)
         {
@@ -34,7 +36,10 @@ namespace NetworkingLibrary
 
             remoteSequence = 0;
             localSequence = 0;
-            remoteSequenceArray = new int[33];
+
+            buffer = new int[33];
+            bufferStart = 0;
+            bufferCount = 0;
         }
 
         public Diagnostics DiagnosticInfo
@@ -60,6 +65,46 @@ namespace NetworkingLibrary
         public int LocalSequence
         {
             get { return localSequence; }
+        }
+
+        public void AddToBuffer(int number)
+        {
+            buffer[(bufferStart + bufferCount) % buffer.Length] = number;
+            if (bufferCount < buffer.Length)
+            {
+                bufferCount++;
+            }
+            else
+            {
+                bufferStart = (bufferStart + 1) % buffer.Length;
+            }
+        }
+
+        public bool BufferContains(int number)
+        {
+            for (int i = 0; i < bufferCount; i++)
+            {
+                if (buffer[(bufferStart + 1) % buffer.Length] == number)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public AckBitfield GenerateAckBitfield()
+        {
+            AckBitfield ackBitfield = new AckBitfield();
+
+            for (int i = 0; i < 33; i++)
+            {
+                if (BufferContains(remoteSequence - i))
+                {
+                    ackBitfield |= (AckBitfield)(1 << i);
+                }
+            }
+
+            return ackBitfield;
         }
 
         public void SendPacket(Packet packet)

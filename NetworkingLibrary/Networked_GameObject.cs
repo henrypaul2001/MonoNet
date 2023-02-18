@@ -16,7 +16,7 @@ namespace NetworkingLibrary
             this.networkManager = networkManager;
             this.clientID = clientID;
 
-            networkManager.NetworkedObjects.Add(this);
+            this.networkManager.NetworkedObjects.Add(this);
         }
 
         public int ClientID

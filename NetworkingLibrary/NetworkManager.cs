@@ -115,22 +115,24 @@ namespace NetworkingLibrary
 
         public void SendGameState()
         {
-            string payload = $"/SYNC/id={localClient.ID}/VARSTART/";
+            string payload = $"id={localClient.ID}/VARSTART/";
             for (int i = 0; i < networkedObjects.Count; i++)
             {
                 // Find all networked variables using reflection
                 var type = networkedObjects[i].GetType();
-                var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance).Where(f => f.IsDefined(typeof(NetworkedVariable), false));
+                var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic).Where(f => f.IsDefined(typeof(NetworkedVariable), false));
                 foreach ( var field in fields )
                 {
                     payload += $"{field.Name}={field.GetValue(networkedObjects[i])}/";
                 }
                 payload += "VAREND/";
 
+                Packet packet;
                 for (int j = 0; j < connections.Count; j++)
                 {
                     // Construct packet
-
+                    payload = $"{protocolID}/SYNC/{connections[i].LocalSequence}/{connections[i].RemoteSequence}/" + payload;
+                    packet = new Packet()
                     // Send packet
                 }
             }
