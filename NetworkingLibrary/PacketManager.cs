@@ -111,34 +111,41 @@ namespace NetworkingLibrary
             string[] split = payload.Split('/');
 
             PacketType packetType;
-
-            if (split[1] == "REQUEST")
+            Packet packet;
+            switch (split[1])
             {
-                // Connection packet
+                case "REQUEST":
+                    // Connection packet
 
-                // Begin establishing connection
-                Packet packet = new Packet(PacketType.CONNECT, sourceIP, sourcePort, data);
-                networkManager.HandleConnectionRequest(packet);
-            }
-            else if (split[1] == "ACCEPT")
-            {
-                // Connection accept packet
+                    // Begin establishing connection
+                    packet = new Packet(PacketType.CONNECT, sourceIP, sourcePort, data);
+                    networkManager.HandleConnectionRequest(packet);
+                    break;
+                case "ACCEPT":
+                    // Connection accept packet
 
-                // Create accept packet and pass to network manager
-                Packet packet = new Packet(PacketType.ACCEPT, sourceIP, sourcePort, data);
-                networkManager.HandleConnectionAccept(packet);
-            }
-            else if (split[1] == "SYNC")
-            {
-                // Synchronisation packet
+                    // Create accept packet and pass to network manager
+                    packet = new Packet(PacketType.ACCEPT, sourceIP, sourcePort, data);
+                    networkManager.HandleConnectionAccept(packet);
+                    break;
+                case "SYNC":
+                    // Synchronisation packet
 
-                // Create sync packet and pass to network manager
-                int localSequence = int.Parse(split[2]);
-                int remoteSequence = int.Parse(split[3]);
-                AckBitfield ackBitfield = (AckBitfield)Enum.Parse(typeof(AckBitfield), split[4]);
+                    // Create sync packet and pass to network manager
+                    int localSequence = int.Parse(split[2]);
+                    int remoteSequence = int.Parse(split[3]);
+                    AckBitfield ackBitfield = (AckBitfield)Enum.Parse(typeof(AckBitfield), split[4]);
 
-                Packet packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, sourceIP, sourcePort, data);
-                networkManager.ProcessSyncPacket(packet);
+                    packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, sourceIP, sourcePort, data);
+                    networkManager.ProcessSyncPacket(packet);
+                    break;
+                case "DISCONNECT":
+                    // Disconnect packet
+
+                    // Create disconnect packet and pass to network manager
+                    packet = new Packet(PacketType.DISCONNECT, sourceIP, sourcePort, data);
+                    networkManager.HandleDisconnect(packet);
+                    break;
             }
         }
     }

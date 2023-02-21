@@ -41,18 +41,7 @@ namespace NetworkingLibrary
                 // Socket will listen to packets from all IP addresses
                 socket.Bind(new IPEndPoint(IPAddress.Any, port));
 
-                // Get all client IDs
-                List<int> clientIDs = new List<int>();
-                if (otherClients != null)
-                {
-                    for (int i = 0; i < otherClients.Count(); i++)
-                    {
-                        if (otherClients[i] != null)
-                        {
-                            clientIDs.Add(otherClients[i].ID);
-                        }
-                    }
-                }
+                List<int> clientIDs = networkManager.GetClientIDs();
 
                 // Generate unique ID for client
                 id = GenerateClientID(clientIDs);
@@ -162,6 +151,11 @@ namespace NetworkingLibrary
             Packet acceptPacket = new Packet(ip, this.ip, destinationPort, data, PacketType.ACCEPT);
             networkManager.PacketManager.SendPacket(acceptPacket, ref socket);
             //networkManager.PacketManager.StartReceiving(ref socket, networkManager);
+        }
+
+        public void Close()
+        {
+            socket.Close();
         }
     }
 }

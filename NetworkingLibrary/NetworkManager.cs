@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Collections.Specialized;
 using System.CodeDom;
+using System.ComponentModel.Design;
 
 namespace NetworkingLibrary
 {
@@ -224,9 +225,65 @@ namespace NetworkingLibrary
             return null;
         }
 
+        private void DisconnectLocalClient()
+        {
+            // Create disconnect packet and pass to packet manager
+            byte[] data = Encoding.ASCII.GetBytes($"{protocolID}/DISCONNECT/id={localClient.ID}");
+
+            Packet packet;
+            for (int i = 0; i < connections.Count; i++)
+            {
+                packet = new Packet(connections[i].RemoteClient.IP, localClient.IP, connections[i].RemoteClient.Port, data, PacketType.DISCONNECT);
+                packetManager.SendPacket(packet, ref localClient.Socket);
+            }
+        }
+
         public void ConnectLocalClientToHost(string ip, int port)
         {
             localClient.RequestConnection(ip, port);
+        }
+
+        internal void HandleDisconnect(Packet disconnectPacket)
+        {
+            // Find the client that disconnected
+            string data = Encoding.ASCII.GetString(disconnectPacket.Data);
+            string[] split = data.Split('/');
+
+            // Retrieve client info from packet
+            int remoteID;
+            bool parseRemoteID = int.TryParse(split[2].Substring(split[2].IndexOf('=') + 1), out remoteID);
+            if (!parseRemoteID)
+            {
+                Debug.WriteLine("Error parsing remoteID");
+                throw new Exception("Error parsing remoteID of disconnecting client");
+            }
+
+            // Remove client from connections
+            List<int> clientIDs = GetClientIDs();
+
+            if (clientIDs.Contains(remoteID))
+            {
+                for (int i = 0; i < connections.Count; i++)
+                {
+                    if (connections[i].RemoteClient.ID == remoteID)
+                    {
+                        connections.RemoveAt(i);
+                    }
+                }
+                for (int i = 0; i < remoteClients.Count; i++)
+                {
+                    if (remoteClients[i].ID == remoteID)
+                    {
+                        remoteClients.RemoveAt(i);
+                    }
+                }
+
+                ClientDisconnect(remoteID);
+            }
+            else 
+            {
+                Debug.WriteLine("Could not find disconnecting client in connections");
+            }
         }
 
         public virtual void HandleConnectionRequest(Packet connectionPacket)
@@ -238,7 +295,7 @@ namespace NetworkingLibrary
             int remoteID;
             bool parseRemoteID = int.TryParse(split[2].Substring(split[2].IndexOf('=') + 1), out remoteID);
             if (!parseRemoteID) {
-                Console.WriteLine("Error parsing remoteID, id set to 1000");
+                Debug.WriteLine("Error parsing remoteID, id set to 1000");
                 remoteID = 1000;
             }
 
@@ -246,7 +303,7 @@ namespace NetworkingLibrary
             bool parseHostBool = bool.TryParse(split[3].Substring(split[3].IndexOf('=') + 1), out remoteIsHost);
             if (!parseHostBool)
             {
-                Console.WriteLine("Error parsing remoteIsHost, value set to false");
+                Debug.WriteLine("Error parsing remoteIsHost, value set to false");
                 remoteIsHost = false;
             }
 
@@ -254,7 +311,7 @@ namespace NetworkingLibrary
             bool parseServerBool = bool.TryParse(split[4].Substring(split[4].IndexOf('=') + 1), out remoteIsServer);
             if (!parseServerBool)
             {
-                Console.WriteLine("Error parsing remoteIsServer, value set to false");
+                Debug.WriteLine("Error parsing remoteIsServer, value set to false");
                 remoteIsServer = false;
             }
 
@@ -371,20 +428,31 @@ namespace NetworkingLibrary
 
         public abstract void ConnectionEstablished(Connection connection);
 
-        public virtual void ClientDisconnect()
-        {
-            /*when a packet is received and determined to be a disconnect packet, this method is called.
-             * Finds the corresponding client in the list of clients according to the IP address of the 
-             * packet and removes that client from the list after calling the game specific disconnect 
-             * method to give the developer more control over what happens during a disconnection
-             */
-        }
+        public abstract void ClientDisconnect(int clientID);
 
         public virtual void ClientTimeout(Client lostClient)
         {
             /*called when a client times out. Calls a game specific timeout method to give developer more
              * control over what happens when a client times out. Removes lostClient from client list
              */
+        }
+
+        public List<int> GetClientIDs()
+        {
+            // Get all client IDs
+            List<int> clientIDs = new List<int>();
+            if (remoteClients != null)
+            {
+                for (int i = 0; i < remoteClients.Count(); i++)
+                {
+                    if (remoteClients[i] != null)
+                    {
+                        clientIDs.Add(remoteClients[i].ID);
+                    }
+
+                }
+            }
+            return clientIDs;
         }
 
         public List<string> GetConnectedAddresses()
@@ -425,6 +493,22 @@ namespace NetworkingLibrary
             }
             
             return addresses;
+        }
+
+        public void Close()
+        {
+            DisconnectLocalClient();
+            localClient.Close();
+            networkedObjects = null;
+            remoteClients = null;
+            connections = null;
+            pendingClients = null;
+            hostIndex = -1;
+            protocolID = -1;
+            port = -1;
+            server = null;
+            localClient = null;
+            packetManager = null;
         }
     }
 }

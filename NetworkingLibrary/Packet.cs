@@ -67,6 +67,7 @@ namespace NetworkingLibrary
         int portSource;
         int portDestination;
 
+        // Used for creating packets on receive
         public Packet(PacketType packetType, string ipSource, int portSource, byte[] data)
         {
             this.packetType = packetType;
@@ -75,6 +76,7 @@ namespace NetworkingLibrary
             this.portSource = portSource;
         }
 
+        // Used for creating packets on send
         public Packet(PacketType packetType, int sequence, int ack, AckBitfield ackBitfield, string ipSource, int portSource, byte[] data)
         {
             this.packetType = packetType;
@@ -88,6 +90,7 @@ namespace NetworkingLibrary
             CompressData();
         }
 
+        // Used for creating packets on send
         public Packet(string ipDestination, string ipSource, int portDestination, byte[] data, PacketType packetType) 
         {
             this.ipDestination = ipDestination;
@@ -99,6 +102,7 @@ namespace NetworkingLibrary
             CompressData();
         }
 
+        // Used for creating packets on send
         public Packet(PacketType packetType, int sequence, int ack, AckBitfield ackBitfield, byte[] data, string ipDestination, int portDestination)
         {
             this.packetType = packetType;
