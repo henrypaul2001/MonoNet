@@ -141,8 +141,8 @@ namespace NetworkingLibrary
                         int remoteSequence = connections[j].RemoteSequence;
                         AckBitfield ackBitfield = connections[j].GenerateAckBitfield();
 
-                        payload = $"{protocolID}/SYNC/{localSequence}/{remoteSequence}/{ackBitfield}/" + payload;
-                        packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, Encoding.ASCII.GetBytes(payload), connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
+                        string data = $"{protocolID}/SYNC/{localSequence}/{remoteSequence}/{ackBitfield}/" + payload;
+                        packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, Encoding.ASCII.GetBytes(data), connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
 
                         // Send packet
                         packetManager.SendPacket(packet, ref localClient.Socket);
