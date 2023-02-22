@@ -59,7 +59,7 @@ namespace NetworkingLibrary
                 List<string> addresses = networkManager.GetConnectedAddresses();
                 string output = Encoding.ASCII.GetString(data);
                 string[] split = output.Split('/');
-                int protocolID = int.Parse(split[0]);
+                int protocolID = int.Parse(split[1]);
 
                 if (addresses.Contains(remoteIP.Address.ToString()))
                 {
@@ -118,7 +118,7 @@ namespace NetworkingLibrary
 
             PacketType packetType;
             Packet packet;
-            switch (split[1])
+            switch (split[2])
             {
                 case "REQUEST":
                     // Connection packet
@@ -138,11 +138,33 @@ namespace NetworkingLibrary
                     // Synchronisation packet
 
                     // Create sync packet and pass to network manager
-                    int localSequence = int.Parse(split[2]);
-                    int remoteSequence = int.Parse(split[3]);
-                    AckBitfield ackBitfield = (AckBitfield)Enum.Parse(typeof(AckBitfield), split[4]);
+                    int localSequence = int.Parse(split[3]);
+                    int remoteSequence = int.Parse(split[4]);
 
-                    packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, sourceIP, sourcePort, data);
+                    int payloadLength = BitConverter.ToInt32(data, 0);
+
+                    // Get actual size of incoming byte array, ignoring null bytes
+                    int dataSize = Array.IndexOf(data, (byte)0, 4);
+                    if (dataSize == -1)
+                    {
+                        // null byte not found, use full array size
+                        dataSize = data.Length;
+                    }   
+
+                    // Create new byte array to represent the meaningful data of the packet, seperate from the initial length bytes and ending bitfield
+                    byte[] extractedData = new byte[payloadLength];
+
+                    // Create new byte array to represent the ack bitfield
+                    byte[] ackBytes = new byte[dataSize - payloadLength];
+
+                    // Split the extracted data and bitfield data from initial byte array
+                    Array.Copy(data, 4, extractedData, 0, payloadLength);
+                    Array.Copy(data, payloadLength, ackBytes, 0, dataSize - payloadLength);
+
+                    // Create ackbitfield from ack byte array
+                    AckBitfield ackBitfield = (AckBitfield)BitConverter.ToUInt32(ackBytes, 0);
+
+                    packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, sourceIP, sourcePort, extractedData);
                     networkManager.ProcessSyncPacket(packet);
                     break;
                 case "DISCONNECT":

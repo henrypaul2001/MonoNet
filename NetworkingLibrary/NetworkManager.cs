@@ -142,8 +142,21 @@ namespace NetworkingLibrary
                         int remoteSequence = connections[j].RemoteSequence;
                         AckBitfield ackBitfield = connections[j].GenerateAckBitfield();
 
-                        string data = $"{protocolID}/SYNC/{localSequence}/{remoteSequence}/{ackBitfield}/" + payload;
-                        packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, Encoding.ASCII.GetBytes(data), connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
+                        string packetData = $"/{protocolID}/SYNC/{localSequence}/{remoteSequence}/" + payload;
+
+                        byte[] ackBytes = BitConverter.GetBytes((uint)ackBitfield);
+                        byte[] data = Encoding.ASCII.GetBytes(packetData);
+
+                        // Get the length of the data byte array as a byte array
+                        byte[] lengthBytes = BitConverter.GetBytes(data.Length);
+                        
+                        // Combine byte arrays into one byte array
+                        byte[] dataWithAckAndLength = new byte[lengthBytes.Length + ackBytes.Length + data.Length];
+                        Array.Copy(lengthBytes, 0, dataWithAckAndLength, 0, lengthBytes.Length);
+                        Array.Copy(data, 0, dataWithAckAndLength, lengthBytes.Length, data.Length);
+                        Array.Copy(ackBytes, 0, dataWithAckAndLength, data.Length + lengthBytes.Length, ackBytes.Length);
+
+                        packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, dataWithAckAndLength, connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
 
                         // Send packet
                         connections[j].SendPacket(packet);
@@ -152,6 +165,8 @@ namespace NetworkingLibrary
                 }
             }
         }
+
+        // {protocolID}/SYNC/{localSequence}/{remoteSequence}/{ackBitfield}/id={localClient.ID}/objID={networkedObjects[i].ObjectID}/VARSTART/
 
         public void ProcessSyncPacket(Packet syncPacket)
         {
@@ -239,7 +254,7 @@ namespace NetworkingLibrary
         private void DisconnectLocalClient()
         {
             // Create disconnect packet and pass to packet manager
-            byte[] data = Encoding.ASCII.GetBytes($"{protocolID}/DISCONNECT/id={localClient.ID}");
+            byte[] data = Encoding.ASCII.GetBytes($"0/{protocolID}/DISCONNECT/id={localClient.ID}");
 
             Packet packet;
             for (int i = 0; i < connections.Count; i++)
@@ -262,7 +277,7 @@ namespace NetworkingLibrary
 
             // Retrieve client info from packet
             int remoteID;
-            bool parseRemoteID = int.TryParse(split[2].Substring(split[2].IndexOf('=') + 1), out remoteID);
+            bool parseRemoteID = int.TryParse(split[3].Substring(split[3].IndexOf('=') + 1), out remoteID);
             if (!parseRemoteID)
             {
                 Debug.WriteLine("Error parsing remoteID");
@@ -304,14 +319,14 @@ namespace NetworkingLibrary
 
             // Retrieve client info from packet
             int remoteID;
-            bool parseRemoteID = int.TryParse(split[2].Substring(split[2].IndexOf('=') + 1), out remoteID);
+            bool parseRemoteID = int.TryParse(split[3].Substring(split[3].IndexOf('=') + 1), out remoteID);
             if (!parseRemoteID) {
                 Debug.WriteLine("Error parsing remoteID, id set to 1000");
                 remoteID = 1000;
             }
 
             bool remoteIsHost;
-            bool parseHostBool = bool.TryParse(split[3].Substring(split[3].IndexOf('=') + 1), out remoteIsHost);
+            bool parseHostBool = bool.TryParse(split[4].Substring(split[4].IndexOf('=') + 1), out remoteIsHost);
             if (!parseHostBool)
             {
                 Debug.WriteLine("Error parsing remoteIsHost, value set to false");
@@ -319,7 +334,7 @@ namespace NetworkingLibrary
             }
 
             bool remoteIsServer;
-            bool parseServerBool = bool.TryParse(split[4].Substring(split[4].IndexOf('=') + 1), out remoteIsServer);
+            bool parseServerBool = bool.TryParse(split[5].Substring(split[5].IndexOf('=') + 1), out remoteIsServer);
             if (!parseServerBool)
             {
                 Debug.WriteLine("Error parsing remoteIsServer, value set to false");
@@ -341,7 +356,7 @@ namespace NetworkingLibrary
 
             // Retrieve client info from packet
             int remoteID;
-            bool parseRemoteID = int.TryParse(split[2].Substring(split[2].IndexOf('=') + 1), out remoteID);
+            bool parseRemoteID = int.TryParse(split[3].Substring(split[3].IndexOf('=') + 1), out remoteID);
             if (!parseRemoteID)
             {
                 Debug.WriteLine("Error parsing remoteID, id set to 1000");
@@ -349,7 +364,7 @@ namespace NetworkingLibrary
             }
 
             bool remoteIsHost;
-            bool parseHostBool = bool.TryParse(split[3].Substring(split[3].IndexOf('=') + 1), out remoteIsHost);
+            bool parseHostBool = bool.TryParse(split[4].Substring(split[4].IndexOf('=') + 1), out remoteIsHost);
             if (!parseHostBool)
             {
                 Debug.WriteLine("Error parsing remoteIsHost, value set to false");
@@ -357,7 +372,7 @@ namespace NetworkingLibrary
             }
 
             bool remoteIsServer;
-            bool parseServerBool = bool.TryParse(split[4].Substring(split[4].IndexOf('=') + 1), out remoteIsServer);
+            bool parseServerBool = bool.TryParse(split[5].Substring(split[5].IndexOf('=') + 1), out remoteIsServer);
             if (!parseServerBool)
             {
                 Debug.WriteLine("Error parsing remoteIsServer, value set to false");
@@ -365,7 +380,7 @@ namespace NetworkingLibrary
             }
 
             int remoteConnectionsNum;
-            bool parseConnectionsNum = int.TryParse(split[5].Substring(split[5].IndexOf('=') + 1), out remoteConnectionsNum);
+            bool parseConnectionsNum = int.TryParse(split[6].Substring(split[6].IndexOf('=') + 1), out remoteConnectionsNum);
             if (!parseConnectionsNum)
             {
                 Debug.WriteLine("Error parsing remoteConnectionsNum, value set to 0");
@@ -377,8 +392,8 @@ namespace NetworkingLibrary
             List<string> pendingConnectionAddresses = GetPendingAddresses();
             for (int i = 0; i < remoteConnectionsNum * 2; i += 2)
             {
-                string remoteIP = split[6 + i].Substring(split[6 + i].IndexOf("=") + 1);
-                string remotePort = split[6 + i + 1].Substring(split[6 + i + 1].IndexOf("=") + 1);
+                string remoteIP = split[7 + i].Substring(split[7 + i].IndexOf("=") + 1);
+                string remotePort = split[7 + i + 1].Substring(split[7 + i + 1].IndexOf("=") + 1);
                 if (!pendingConnectionAddresses.Contains(remoteIP) && !currentConnectionAddresses.Contains(remoteIP) && int.Parse(remotePort) != localClient.Port)
                 {
                     localClient.RequestConnection(remoteIP, int.Parse(remotePort));

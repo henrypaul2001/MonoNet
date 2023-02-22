@@ -120,7 +120,7 @@ namespace NetworkingLibrary
 
         internal void RequestConnection(string ip, int portDestination)
         {
-            byte[] data = Encoding.ASCII.GetBytes($"{protocolID}/REQUEST/id={id}/isHost={isHost}/isServer={isServer}");
+            byte[] data = Encoding.ASCII.GetBytes($"0/{protocolID}/REQUEST/id={id}/isHost={isHost}/isServer={isServer}");
             Packet connectionPacket = new Packet(ip, this.ip, portDestination, data, PacketType.CONNECT);
             networkManager.PacketManager.SendPacket(connectionPacket, ref socket);
             //networkManager.PacketManager.StartReceiving(ref socket, networkManager);
@@ -137,7 +137,7 @@ namespace NetworkingLibrary
             {
                 connectionNum = otherClients.Count;
             }
-            string payload = ($"{protocolID}/ACCEPT/id={id}/isHost={isHost}/isServer={isServer}/connectionNum={connectionNum}");
+            string payload = ($"0/{protocolID}/ACCEPT/id={id}/isHost={isHost}/isServer={isServer}/connectionNum={connectionNum}");
 
             for (int i = 0; i < connectionNum; i++)
             {
