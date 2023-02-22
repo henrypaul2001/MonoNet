@@ -146,6 +146,7 @@ namespace NetworkingLibrary
                         packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, Encoding.ASCII.GetBytes(data), connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
 
                         // Send packet
+                        connections[j].SendPacket(packet);
                         packetManager.SendPacket(packet, ref localClient.Socket);
                     }
                 }
@@ -174,6 +175,15 @@ namespace NetworkingLibrary
                 return;
             }
 
+            // Find the connection associated with the client ID so that packet sequencing can be updated
+            for (int i = 0; i < connections.Count; i++)
+            {
+                if (connections[i].RemoteClientID == clientID)
+                {
+                    connections[i].ReceivePacket(syncPacket);
+                }
+            }
+
             // IN THE FUTURE, THIS NEEDS TO ALSO CREATE A NEW OBJECT IF IT HASN'T ALREADY BEEN CREATED
             // PASSING THE OBJECT ID IN THE PACKET TO THE OBJECT CONSTRUCTOR. AS OF NOW, AN ASSUMPTION WILL BE MADE
             // THAT ONLY ONE NETWORKED GAME OBJECT EXISTS PER CLIENT ID. THIS IS BECAUSE OF HOW OBJECT ID'S ARE GENERATED
@@ -181,6 +191,7 @@ namespace NetworkingLibrary
 
             //split[7] == "VARSTART" -- signifies the start point of the networked variables in packet
 
+            // Sync variables
             int varIndex = 0;
             string currentString;
             string varName;

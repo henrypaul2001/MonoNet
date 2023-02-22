@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -24,6 +25,8 @@ namespace NetworkingLibrary
         Client localClient;
         Client remoteClient;
 
+        int remoteClientID;
+
         int remoteSequence;
         int localSequence;
 
@@ -33,6 +36,8 @@ namespace NetworkingLibrary
 
             this.localClient = localClient;
             this.remoteClient = remoteClient;
+
+            remoteClientID = remoteClient.ID;
 
             remoteSequence = 0;
             localSequence = 0;
@@ -65,6 +70,11 @@ namespace NetworkingLibrary
         public int LocalSequence
         {
             get { return localSequence; }
+        }
+
+        public int RemoteClientID
+        {
+            get { return remoteClientID; }
         }
 
         public void AddToBuffer(int number)
@@ -114,8 +124,12 @@ namespace NetworkingLibrary
 
         public void ReceivePacket(Packet packet)
         {
-            // Compare sequence of packet against current remote sequence
-            // If packet is more recent, update remote sequence number to sequence number of packet
+            AddToBuffer(packet.Sequence);
+            if (remoteSequence < packet.Sequence)
+            {
+                // Packet is newer
+                remoteSequence = packet.Sequence;
+            }
         }
     }
 }
