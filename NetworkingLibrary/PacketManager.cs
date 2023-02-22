@@ -42,35 +42,41 @@ namespace NetworkingLibrary
 
         private void ReceiveCallback(IAsyncResult result, byte[] data, NetworkManager networkManager)
         {
-            Socket socket = (Socket)result.AsyncState;
-
-            // Create new endpoint that will represent the IP address of the sender
-            EndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
-            
-            int bytesReceived = socket.EndReceiveFrom(result, ref remoteEP);
-
-            IPEndPoint remoteIP = (IPEndPoint)remoteEP;
-
-            Debug.WriteLine($"{bytesReceived} bytes received from IP: {remoteIP.Address}");
-
-            // Check if packet belongs to game by checking IP address against current connections, or checking if the protocol ID is a match
-            List<string> addresses = networkManager.GetConnectedAddresses();
-            string output = Encoding.ASCII.GetString(data);
-            string[] split = output.Split('/');
-            int protocolID = int.Parse(split[0]);
-
-            if (addresses.Contains(remoteIP.Address.ToString()))
+            try
             {
-                // Packet belongs to game
-                ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
-            }
-            else if (protocolID == networkManager.ProtocolID)
-            {
-                // Packet belongs to game
-                ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
-            }
+                Socket socket = (Socket)result.AsyncState;
 
-            StartReceiving(ref socket, networkManager);
+                // Create new endpoint that will represent the IP address of the sender
+                EndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
+
+                int bytesReceived = socket.EndReceiveFrom(result, ref remoteEP);
+
+                IPEndPoint remoteIP = (IPEndPoint)remoteEP;
+
+                Debug.WriteLine($"{bytesReceived} bytes received from IP: {remoteIP.Address}");
+
+                // Check if packet belongs to game by checking IP address against current connections, or checking if the protocol ID is a match
+                List<string> addresses = networkManager.GetConnectedAddresses();
+                string output = Encoding.ASCII.GetString(data);
+                string[] split = output.Split('/');
+                int protocolID = int.Parse(split[0]);
+
+                if (addresses.Contains(remoteIP.Address.ToString()))
+                {
+                    // Packet belongs to game
+                    ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
+                }
+                else if (protocolID == networkManager.ProtocolID)
+                {
+                    // Packet belongs to game
+                    ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
+                }
+
+                StartReceiving(ref socket, networkManager);
+            } catch (Exception e)
+            {
+                Debug.WriteLine(e);
+            }
         }
 
         internal void ReceivePacket(ref Socket socket)
