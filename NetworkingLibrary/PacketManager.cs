@@ -116,7 +116,7 @@ namespace NetworkingLibrary
 
             string[] split = payload.Split('/');
 
-            PacketType packetType;
+            PacketType packetType; // <------------------------------------------------------------------------------------------------------------- Comment this out once you know everything else is working
             Packet packet;
             switch (split[2])
             {
@@ -138,34 +138,15 @@ namespace NetworkingLibrary
                     // Synchronisation packet
 
                     // Create sync packet and pass to network manager
-                    int localSequence = int.Parse(split[3]);
-                    int remoteSequence = int.Parse(split[4]);
-
-                    int payloadLength = BitConverter.ToInt32(data, 0);
-
-                    // Get actual size of incoming byte array, ignoring null bytes
-                    int dataSize = Array.IndexOf(data, (byte)0, 4);
-                    if (dataSize == -1)
-                    {
-                        // null byte not found, use full array size
-                        dataSize = data.Length;
-                    }   
-
-                    // Create new byte array to represent the meaningful data of the packet, seperate from the initial length bytes and ending bitfield
-                    byte[] extractedData = new byte[payloadLength];
-
-                    // Create new byte array to represent the ack bitfield
-                    byte[] ackBytes = new byte[dataSize - payloadLength];
-
-                    // Split the extracted data and bitfield data from initial byte array
-                    Array.Copy(data, 4, extractedData, 0, payloadLength);
-                    Array.Copy(data, payloadLength, ackBytes, 0, dataSize - payloadLength);
-
-                    // Create ackbitfield from ack byte array
-                    AckBitfield ackBitfield = (AckBitfield)BitConverter.ToUInt32(ackBytes, 0);
-
-                    packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, sourceIP, sourcePort, extractedData);
+                    packet = CreateConstructOrSyncPacket(PacketType.SYNC, data, sourceIP, sourcePort);
                     networkManager.ProcessSyncPacket(packet);
+                    break;
+                case "CONSTRUCT":
+                    // Object construction packet (a new local object has been created on a remote client, therefore all clients in session must now create a matching object locally)
+
+                    // Create construct packet and pass to network manager
+                    packet = CreateConstructOrSyncPacket(PacketType.CONSTRUCT, data, sourceIP, sourcePort);
+                    networkManager.ProcessConstructPacket(packet);
                     break;
                 case "DISCONNECT":
                     // Disconnect packet
@@ -175,6 +156,41 @@ namespace NetworkingLibrary
                     networkManager.HandleDisconnect(packet);
                     break;
             }
+        }
+
+        private Packet CreateConstructOrSyncPacket(PacketType packetType, byte[] data, string sourceIP, int sourcePort)
+        {
+            string payload = Encoding.ASCII.GetString(data, 0, data.Length);
+
+            string[] split = payload.Split('/');
+
+            int localSequence = int.Parse(split[3]);
+            int remoteSequence = int.Parse(split[4]);
+
+            int payloadLength = BitConverter.ToInt32(data, 0);
+
+            // Get actual size of incoming byte array, ignoring null bytes
+            int dataSize = Array.IndexOf(data, (byte)0, 4);
+            if (dataSize == -1)
+            {
+                // null byte not found, use full array size
+                dataSize = data.Length;
+            }
+
+            // Create new byte array to represent the meaningful data of the packet, seperate from the initial length bytes and ending bitfield
+            byte[] extractedData = new byte[payloadLength];
+
+            // Create new byte array to represent the ack bitfield
+            byte[] ackBytes = new byte[dataSize - payloadLength];
+
+            // Split the extracted data and bitfield data from initial byte array
+            Array.Copy(data, 4, extractedData, 0, payloadLength);
+            Array.Copy(data, payloadLength, ackBytes, 0, dataSize - payloadLength);
+
+            // Create ackbitfield from ack byte array
+            AckBitfield ackBitfield = (AckBitfield)BitConverter.ToUInt32(ackBytes, 0);
+
+            return new Packet(packetType, localSequence, remoteSequence, ackBitfield, sourceIP, sourcePort, extractedData);
         }
     }
 }

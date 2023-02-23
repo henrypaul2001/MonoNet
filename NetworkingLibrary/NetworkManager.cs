@@ -11,6 +11,8 @@ using System.Reflection;
 using System.Collections.Specialized;
 using System.CodeDom;
 using System.ComponentModel.Design;
+using Newtonsoft.Json;
+using System.ComponentModel;
 
 namespace NetworkingLibrary
 {
@@ -116,6 +118,50 @@ namespace NetworkingLibrary
             get { return packetManager; }
         }
 
+        public void SendLocalObjects()
+        {
+            for (int i = 0; i < networkedObjects.Count; i++)
+            {
+                if (networkedObjects[i].IsLocal)
+                {
+                    Type objType = networkedObjects[i].GetType();
+                    ConstructorInfo[] constructors = objType.GetConstructors(BindingFlags.Instance | BindingFlags.Public);
+                    ConstructorInfo constructor = null;
+                    if (constructors.Length == 1)
+                    {
+                        constructor = constructors[0];
+                    }
+                    else if (constructors.Length > 1)
+                    {
+                        constructor = constructors.FirstOrDefault(c => c.GetCustomAttribute<RemoteConstructor>() != null);
+                    }
+                    else
+                    {
+                        // Oh dear
+                    }
+
+                    ParameterInfo[] parameters = null;
+                    if (constructor != null)
+                    {
+                        parameters = constructor.GetParameters();
+                    }
+
+                    string payload = $"id={localClient.ID}/objID={networkedObjects[i].ObjectID}/{objType.FullName}/PARSTART/";
+
+                    foreach (ParameterInfo param in parameters)
+                    {
+                        // Serialize parameter by looking at the property in the game object with the matching name
+                        string serializedParam = JsonConvert.SerializeObject(networkedObjects[i].GetType().GetProperty(param.Name));
+                        payload += $"{param.ParameterType.FullName}={serializedParam}/";
+                    }
+
+                    payload += "PAREND/";
+
+                    CreateAndSendSyncOrConstructPacket(PacketType.CONSTRUCT, payload);
+                }
+            }
+        }
+
         public void SendGameState()
         {
             for (int i = 0; i < networkedObjects.Count; i++)
@@ -134,41 +180,122 @@ namespace NetworkingLibrary
                     }
                     payload += "VAREND/";
 
-                    Packet packet;
-                    for (int j = 0; j < connections.Count; j++)
-                    {
-                        // Construct packet
-                        int localSequence = connections[j].LocalSequence;
-                        int remoteSequence = connections[j].RemoteSequence;
-                        AckBitfield ackBitfield = connections[j].GenerateAckBitfield();
-
-                        string packetData = $"/{protocolID}/SYNC/{localSequence}/{remoteSequence}/" + payload;
-
-                        byte[] ackBytes = BitConverter.GetBytes((uint)ackBitfield);
-                        byte[] data = Encoding.ASCII.GetBytes(packetData);
-
-                        // Get the length of the data byte array as a byte array
-                        byte[] lengthBytes = BitConverter.GetBytes(data.Length);
-                        
-                        // Combine byte arrays into one byte array
-                        byte[] dataWithAckAndLength = new byte[lengthBytes.Length + ackBytes.Length + data.Length];
-                        Array.Copy(lengthBytes, 0, dataWithAckAndLength, 0, lengthBytes.Length);
-                        Array.Copy(data, 0, dataWithAckAndLength, lengthBytes.Length, data.Length);
-                        Array.Copy(ackBytes, 0, dataWithAckAndLength, data.Length + lengthBytes.Length, ackBytes.Length);
-
-                        packet = new Packet(PacketType.SYNC, localSequence, remoteSequence, ackBitfield, dataWithAckAndLength, connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
-
-                        // Send packet
-                        connections[j].SendPacket(packet);
-                        packetManager.SendPacket(packet, ref localClient.Socket);
-                    }
+                    CreateAndSendSyncOrConstructPacket(PacketType.SYNC, payload);
                 }
+            }
+        }
+
+        private void CreateAndSendSyncOrConstructPacket(PacketType packetType, string payload)
+        {
+            Packet packet;
+            for (int j = 0; j < connections.Count; j++)
+            {
+                // Construct packet
+                int localSequence = connections[j].LocalSequence;
+                int remoteSequence = connections[j].RemoteSequence;
+                AckBitfield ackBitfield = connections[j].GenerateAckBitfield();
+
+                string packetData = $"/{protocolID}/{packetType}/{localSequence}/{remoteSequence}/" + payload;
+
+                byte[] ackBytes = BitConverter.GetBytes((uint)ackBitfield);
+                byte[] data = Encoding.ASCII.GetBytes(packetData);
+
+                // Get the length of the data byte array as a byte array
+                byte[] lengthBytes = BitConverter.GetBytes(data.Length);
+
+                // Combine byte arrays into one byte array
+                byte[] dataWithAckAndLength = new byte[lengthBytes.Length + ackBytes.Length + data.Length];
+                Array.Copy(lengthBytes, 0, dataWithAckAndLength, 0, lengthBytes.Length);
+                Array.Copy(data, 0, dataWithAckAndLength, lengthBytes.Length, data.Length);
+                Array.Copy(ackBytes, 0, dataWithAckAndLength, data.Length + lengthBytes.Length, ackBytes.Length);
+
+                packet = new Packet(packetType, localSequence, remoteSequence, ackBitfield, dataWithAckAndLength, connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
+
+                // Send packet
+                connections[j].SendPacket(packet);
+                packetManager.SendPacket(packet, ref localClient.Socket);
             }
         }
 
         // {protocolID}/SYNC/{localSequence}/{remoteSequence}/{ackBitfield}/id={localClient.ID}/objID={networkedObjects[i].ObjectID}/VARSTART/
 
-        public void ProcessSyncPacket(Packet syncPacket)
+        internal void ProcessConstructPacket(Packet constructPacket)
+        {
+            string data = Encoding.ASCII.GetString(constructPacket.Data);
+            string[] split = data.Split('/');
+
+            // Retrieve object info from packet
+            int clientID;
+            bool parseClientID = int.TryParse(split[5].Substring(split[5].IndexOf('=') + 1), out clientID);
+            if (!parseClientID)
+            {
+                Debug.WriteLine("Error parsing client ID, packet ignored");
+                return;
+            }
+
+            int objectID;
+            bool parseObjectID = int.TryParse(split[6].Substring(split[6].IndexOf('=') + 1), out objectID);
+            if (!parseObjectID)
+            {
+                Debug.WriteLine("Error parsing object ID, packet ignored");
+                return;
+            }
+
+            string typeName = split[7];
+            Type objType = Type.GetType(typeName);
+            if (objType == null)
+            {
+                // Oh dear
+                Debug.WriteLine("Error parsing object type, packet ignored");
+                return;
+            }
+
+            // Find the connection associated with the client ID so that packet sequencing can be updated
+            for (int i = 0; i < connections.Count; i++)
+            {
+                if (connections[i].RemoteClientID == clientID)
+                {
+                    connections[i].ReceivePacket(constructPacket);
+                }
+            }
+
+            //split[8] == "PARSTART" -- signifies the start point of the object parameters in packet
+
+            int paramIndex = 0;
+            string currentString;
+            string paramName;
+            string paramValue;
+            List<object> parameters = new List<object> { this, clientID, objectID };
+            while (true)
+            {
+                currentString = split[9 + paramIndex];
+                if (currentString == "PAREND")
+                {
+                    // Reached end of parameters
+                    break;
+                }
+                paramName = currentString.Substring(0, currentString.IndexOf('='));
+                string paramSerializedValue = currentString.Substring(currentString.IndexOf('=') + 1);
+
+                Type targetType = paramName.GetType();
+                object deserializedParameter = JsonConvert.DeserializeObject(paramSerializedValue, targetType);
+                object param = Convert.ChangeType(deserializedParameter, targetType);
+                parameters.Add(param);
+                paramIndex++;
+            }
+
+            // Find remote constructor of object
+            ConstructorInfo[] constructors = objType.GetConstructors();
+            ConstructorInfo targetConstructor = constructors.FirstOrDefault(c => c.GetCustomAttribute<RemoteConstructor>() != null);
+
+            if (targetConstructor != null)
+            {
+                var instance = targetConstructor.Invoke(parameters.ToArray());
+                networkedObjects.Add((Networked_GameObject)instance);
+            }
+        }
+
+        internal void ProcessSyncPacket(Packet syncPacket)
         {
             string data = Encoding.ASCII.GetString(syncPacket.Data);
             string[] split = data.Split('/');
@@ -178,7 +305,7 @@ namespace NetworkingLibrary
             bool parseClientID = int.TryParse(split[5].Substring(split[5].IndexOf('=') + 1), out clientID);
             if (!parseClientID)
             {
-                Console.WriteLine("Error parsing client ID, packet ignored");
+                Debug.WriteLine("Error parsing client ID, packet ignored");
                 return;
             }
 
@@ -186,7 +313,7 @@ namespace NetworkingLibrary
             bool parseObjectID = int.TryParse(split[6].Substring(split[6].IndexOf('=') + 1), out objectID);
             if (!parseObjectID)
             {
-                Console.WriteLine("Error parsing object ID, packet ignored");
+                Debug.WriteLine("Error parsing object ID, packet ignored");
                 return;
             }
 

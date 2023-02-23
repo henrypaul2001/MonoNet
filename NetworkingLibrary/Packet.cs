@@ -49,6 +49,7 @@ namespace NetworkingLibrary
         CONNECT,
         DISCONNECT,
         ACCEPT,
+        CONSTRUCT,
     }
 
     public class Packet
