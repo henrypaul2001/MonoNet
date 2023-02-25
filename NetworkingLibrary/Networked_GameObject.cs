@@ -13,12 +13,15 @@ namespace NetworkingLibrary
         int objectID;
         bool isLocal;
 
-        public Networked_GameObject(NetworkManager networkManager, int clientID)
+        Dictionary<string, string> constructProperties;
+
+        public Networked_GameObject(NetworkManager networkManager, int clientID, Dictionary<string, string> constructProperties)
         {
             this.networkManager = networkManager;
             this.clientID = clientID;
             this.isLocal = true;
             this.networkManager.NetworkedObjects.Add(this);
+            this.constructProperties = constructProperties;
 
             GenerateObjectID();
         }
@@ -72,6 +75,11 @@ namespace NetworkingLibrary
         public bool IsLocal
         {
             get { return isLocal; }
+        }
+
+        public Dictionary<string, string> ConstructProperties
+        {
+            get { return constructProperties; }
         }
 
         /*

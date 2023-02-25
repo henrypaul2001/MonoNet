@@ -118,12 +118,26 @@ namespace NetworkingLibrary
             get { return packetManager; }
         }
 
-        public void SendLocalObjects()
+        public void SendLocalObjects(Connection destinationConnection)
         {
             for (int i = 0; i < networkedObjects.Count; i++)
             {
                 if (networkedObjects[i].IsLocal)
                 {
+                    Type objType = networkedObjects[i].GetType();
+                    string payload = $"id={localClient.ID}/objID={networkedObjects[i].ObjectID}/{objType.FullName}/PROPSTART/";
+
+                    Dictionary<string, string> properties = networkedObjects[i].ConstructProperties;
+                    if (properties != null)
+                    {
+                        foreach (KeyValuePair<string, string> pair in properties)
+                        {
+                            payload += $"{pair.Key}={pair.Value}/";
+                        }
+                    }
+                    payload += "PROPEND/";
+                    CreateAndSendSyncOrConstructPacket(PacketType.CONSTRUCT, payload, destinationConnection.RemoteClient.IP, destinationConnection.RemoteClient.Port);
+                    /*
                     Type objType = networkedObjects[i].GetType();
                     ConstructorInfo[] constructors = objType.GetConstructors(BindingFlags.Instance | BindingFlags.Public);
                     ConstructorInfo constructor = null;
@@ -151,13 +165,57 @@ namespace NetworkingLibrary
                     foreach (ParameterInfo param in parameters)
                     {
                         // Serialize parameter by looking at the property in the game object with the matching name
-                        string serializedParam = JsonConvert.SerializeObject(networkedObjects[i].GetType().GetProperty(param.Name));
-                        payload += $"{param.ParameterType.FullName}={serializedParam}/";
+                        //var test1 = networkedObjects[i].GetType();
+                        //var test2 = test1.GetProperty(param.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
+                        //var test3 = test2.GetValue(networkedObjects[i]);
+                        //var value = networkedObjects[i].GetType().GetProperty(param.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic).GetValue(networkedObjects[i]);
+                        if (param.Name != "networkManager" && param.Name != "clientID" && param.Name != "objectID")
+                        {
+                            Type targetType = param.ParameterType;
+                            //Type targetType = Type.GetType($"{param.ParameterType.FullName}, {param.ParameterType.Namespace}");
+
+                            // Get the member info
+                            MemberInfo memberInfo = networkedObjects[i].GetType().GetMember(param.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy).FirstOrDefault();
+                            if (memberInfo == null)
+                            {
+                                memberInfo = networkedObjects[i].GetType().GetProperty(param.Name, BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
+                            }
+                            if (memberInfo != null)
+                            {
+                                // Get the value of member
+                                object memberValue = null;
+                                if (memberInfo.MemberType == MemberTypes.Field)
+                                {
+                                    memberValue = ((FieldInfo)memberInfo).GetValue(networkedObjects[i]);
+                                    memberValue = Convert.ChangeType(memberValue, targetType);
+                                }
+                                else if (memberInfo.MemberType == MemberTypes.Property)
+                                {
+                                    memberValue = ((PropertyInfo)memberInfo).GetValue(networkedObjects[i]);
+                                    memberValue = Convert.ChangeType(memberValue, targetType);
+                                }
+
+                                // I think youre looking at this a bit wrong, no need for serialize, with the Game1 class, all clients will have the same name for it, so just have reflection type that name in the parameter box as a string
+                                string paramValue;
+                                try
+                                {
+                                    paramValue = JsonConvert.SerializeObject(memberValue);
+                                }
+                                catch (Exception e)
+                                {
+                                    Debug.WriteLine(e);
+                                    paramValue = memberValue.ToString();
+                                }
+                                payload += $"{param.ParameterType.FullName}={paramValue}/";
+
+                            }
+                        }
                     }
 
                     payload += "PAREND/";
 
                     CreateAndSendSyncOrConstructPacket(PacketType.CONSTRUCT, payload);
+                    */
                 }
             }
         }
@@ -180,44 +238,52 @@ namespace NetworkingLibrary
                     }
                     payload += "VAREND/";
 
-                    CreateAndSendSyncOrConstructPacket(PacketType.SYNC, payload);
+                    CreateAndSendSyncOrConstructPacket(PacketType.SYNC, payload, "ALL", -1);
                 }
             }
         }
 
-        private void CreateAndSendSyncOrConstructPacket(PacketType packetType, string payload)
+        private void CreateAndSendSyncOrConstructPacket(PacketType packetType, string payload, string destinationIP, int destinationPort)
         {
             Packet packet;
             for (int j = 0; j < connections.Count; j++)
             {
-                // Construct packet
-                int localSequence = connections[j].LocalSequence;
-                int remoteSequence = connections[j].RemoteSequence;
-                AckBitfield ackBitfield = connections[j].GenerateAckBitfield();
+                if (destinationIP == connections[j].RemoteClient.IP || destinationIP == "ALL")
+                {
+                    if (destinationPort == connections[j].RemoteClient.Port || destinationIP == "ALL")
+                    {
+                        // Construct packet
+                        int localSequence = connections[j].LocalSequence;
+                        int remoteSequence = connections[j].RemoteSequence;
+                        AckBitfield ackBitfield = connections[j].GenerateAckBitfield();
 
-                string packetData = $"/{protocolID}/{packetType}/{localSequence}/{remoteSequence}/" + payload;
+                        string packetData = $"/{protocolID}/{packetType}/{localSequence}/{remoteSequence}/" + payload;
 
-                byte[] ackBytes = BitConverter.GetBytes((uint)ackBitfield);
-                byte[] data = Encoding.ASCII.GetBytes(packetData);
+                        byte[] ackBytes = BitConverter.GetBytes((uint)ackBitfield);
+                        byte[] data = Encoding.ASCII.GetBytes(packetData);
 
-                // Get the length of the data byte array as a byte array
-                byte[] lengthBytes = BitConverter.GetBytes(data.Length);
+                        // Get the length of the data byte array as a byte array
+                        byte[] lengthBytes = BitConverter.GetBytes(data.Length);
 
-                // Combine byte arrays into one byte array
-                byte[] dataWithAckAndLength = new byte[lengthBytes.Length + ackBytes.Length + data.Length];
-                Array.Copy(lengthBytes, 0, dataWithAckAndLength, 0, lengthBytes.Length);
-                Array.Copy(data, 0, dataWithAckAndLength, lengthBytes.Length, data.Length);
-                Array.Copy(ackBytes, 0, dataWithAckAndLength, data.Length + lengthBytes.Length, ackBytes.Length);
+                        // Combine byte arrays into one byte array
+                        byte[] dataWithAckAndLength = new byte[lengthBytes.Length + ackBytes.Length + data.Length];
+                        Array.Copy(lengthBytes, 0, dataWithAckAndLength, 0, lengthBytes.Length);
+                        Array.Copy(data, 0, dataWithAckAndLength, lengthBytes.Length, data.Length);
+                        Array.Copy(ackBytes, 0, dataWithAckAndLength, data.Length + lengthBytes.Length, ackBytes.Length);
 
-                packet = new Packet(packetType, localSequence, remoteSequence, ackBitfield, dataWithAckAndLength, connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
+                        packet = new Packet(packetType, localSequence, remoteSequence, ackBitfield, dataWithAckAndLength, connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
 
-                // Send packet
-                connections[j].SendPacket(packet);
-                packetManager.SendPacket(packet, ref localClient.Socket);
+                        // Send packet
+                        connections[j].SendPacket(packet);
+                        packetManager.SendPacket(packet, ref localClient.Socket);
+                    }
+                }
             }
         }
 
         // {protocolID}/SYNC/{localSequence}/{remoteSequence}/{ackBitfield}/id={localClient.ID}/objID={networkedObjects[i].ObjectID}/VARSTART/
+
+        public abstract void ConstructRemoteObject(int clientID, int objectID, Type objectType, Dictionary<string, string> properties);
 
         internal void ProcessConstructPacket(Packet constructPacket)
         {
@@ -242,7 +308,8 @@ namespace NetworkingLibrary
             }
 
             string typeName = split[7];
-            Type objType = Type.GetType(typeName);
+            string typeNamespace = typeName.Substring(0, typeName.IndexOf('.'));
+            Type objType = Type.GetType($"{typeName}, {typeNamespace}");
             if (objType == null)
             {
                 // Oh dear
@@ -259,8 +326,33 @@ namespace NetworkingLibrary
                 }
             }
 
-            //split[8] == "PARSTART" -- signifies the start point of the object parameters in packet
+            //split[8] == "PROPSTART" -- signifies the start point of the construction properties in packet
 
+            // Create dictionary based on properties included in string
+            int propertyIndex = 0;
+            string currentString;
+            string propertyKey;
+            string propertyValue;
+            Dictionary<string, string> properties = new Dictionary<string, string>();
+            while (true)
+            {
+                currentString = split[9 + propertyIndex];
+                if (currentString == "PROPEND")
+                {
+                    // Reached end of properties
+                    break;
+                }
+
+                propertyKey = currentString.Substring(0, currentString.IndexOf('='));
+                propertyValue = currentString.Substring(currentString.IndexOf('=') + 1);
+                properties.Add(propertyKey, propertyValue);
+                propertyIndex++;
+            }
+
+            // Pass values to abstract method so developer can create local instance of networked object
+            ConstructRemoteObject(clientID, objectID, objType, properties);
+
+            /*
             int paramIndex = 0;
             string currentString;
             string paramName;
@@ -277,7 +369,8 @@ namespace NetworkingLibrary
                 paramName = currentString.Substring(0, currentString.IndexOf('='));
                 string paramSerializedValue = currentString.Substring(currentString.IndexOf('=') + 1);
 
-                Type targetType = paramName.GetType();
+                string paramNamespace = paramName.Substring(0, paramName.IndexOf('.'));
+                Type targetType = Type.GetType($"{paramName}, {paramNamespace}");
                 object deserializedParameter = JsonConvert.DeserializeObject(paramSerializedValue, targetType);
                 object param = Convert.ChangeType(deserializedParameter, targetType);
                 parameters.Add(param);
@@ -293,6 +386,7 @@ namespace NetworkingLibrary
                 var instance = targetConstructor.Invoke(parameters.ToArray());
                 networkedObjects.Add((Networked_GameObject)instance);
             }
+            */
         }
 
         internal void ProcessSyncPacket(Packet syncPacket)
@@ -326,52 +420,57 @@ namespace NetworkingLibrary
                 }
             }
 
-            // IN THE FUTURE, THIS NEEDS TO ALSO CREATE A NEW OBJECT IF IT HASN'T ALREADY BEEN CREATED
-            // PASSING THE OBJECT ID IN THE PACKET TO THE OBJECT CONSTRUCTOR. AS OF NOW, AN ASSUMPTION WILL BE MADE
-            // THAT ONLY ONE NETWORKED GAME OBJECT EXISTS PER CLIENT ID. THIS IS BECAUSE OF HOW OBJECT ID'S ARE GENERATED
-            // ...FIX FOR ANOTHER DAY
-
             //split[7] == "VARSTART" -- signifies the start point of the networked variables in packet
 
-            // Sync variables
-            int varIndex = 0;
-            string currentString;
-            string varName;
-            string varValue;
-            while (true) 
+            // Find object corresponding to client ID and object ID
+            Networked_GameObject obj = GetNetworkedObjectFromClientAndObjectID(clientID, objectID);
+
+            if (obj == null)
             {
-                currentString = split[8 + varIndex];
-                if (currentString == "VAREND")
+                Debug.WriteLine("Couldn't find object from SYNC packet");
+            }
+            else
+            {
+                // Sync variables
+                int varIndex = 0;
+                string currentString;
+                string varName;
+                string varValue;
+                while (true)
                 {
-                    // Reached end of networked variables
-                    break;
+                    currentString = split[8 + varIndex];
+                    if (currentString == "VAREND")
+                    {
+                        // Reached end of networked variables
+                        break;
+                    }
+                    varName = currentString.Substring(0, currentString.IndexOf('='));
+                    varValue = currentString.Substring(currentString.IndexOf('=') + 1);
+
+                    // Set value of the corresponding variable in networked object
+                    FieldInfo field = obj.GetType().GetField(varName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (field != null)
+                    {
+                        // Convert string value to appropriate type
+                        object value = Convert.ChangeType(varValue, field.FieldType);
+
+                        field.SetValue(obj, value);
+                    }
+                    varIndex++;
                 }
-                varName = currentString.Substring(0, currentString.IndexOf('='));
-                varValue = currentString.Substring(currentString.IndexOf('=') + 1);
-
-                // Find object corresponding to client ID - SHOULD ALSO USE OBJECT ID IN FUTURE
-                Networked_GameObject obj = GetNetworkedObjectFromClientID(clientID);
-
-                // Set value of the corresponding variable in networked object
-                FieldInfo field = obj.GetType().GetField(varName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if (field != null)
-                {
-                    // Convert string value to appropriate type
-                    object value = Convert.ChangeType(varValue, field.FieldType);
-
-                    field.SetValue(obj, value);
-                }
-                varIndex++;
             }
         }
 
-        Networked_GameObject GetNetworkedObjectFromClientID(int id)
+        Networked_GameObject GetNetworkedObjectFromClientAndObjectID(int clientID, int objectID)
         {
             foreach (Networked_GameObject obj in networkedObjects)
             {
-                if (obj.ClientID == id)
+                if (obj.ClientID == clientID)
                 {
-                    return obj;
+                    if (obj.ObjectID == objectID)
+                    {
+                        return obj;
+                    }
                 }
             }
 
