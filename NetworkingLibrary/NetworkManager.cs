@@ -118,6 +118,18 @@ namespace NetworkingLibrary
             get { return packetManager; }
         }
 
+        public void Update()
+        {
+            // Sync game state
+            SendGameState();
+
+            // Check all connections for lost packets
+            foreach (Connection connection in connections)
+            {
+                connection.CheckForLostPackets();
+            }
+        }
+
         public void SendLocalObjects(Connection destinationConnection)
         {
             for (int i = 0; i < networkedObjects.Count; i++)
@@ -274,14 +286,12 @@ namespace NetworkingLibrary
                         packet = new Packet(packetType, localSequence, remoteSequence, ackBitfield, dataWithAckAndLength, connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
 
                         // Send packet
-                        connections[j].SendPacket(packet);
+                        connections[j].PacketSent(packet);
                         packetManager.SendPacket(packet, ref localClient.Socket);
                     }
                 }
             }
         }
-
-        // {protocolID}/SYNC/{localSequence}/{remoteSequence}/{ackBitfield}/id={localClient.ID}/objID={networkedObjects[i].ObjectID}/VARSTART/
 
         public abstract void ConstructRemoteObject(int clientID, int objectID, Type objectType, Dictionary<string, string> properties);
 
@@ -322,7 +332,7 @@ namespace NetworkingLibrary
             {
                 if (connections[i].RemoteClientID == clientID)
                 {
-                    connections[i].ReceivePacket(constructPacket);
+                    connections[i].PacketReceived(constructPacket);
                 }
             }
 
@@ -416,7 +426,7 @@ namespace NetworkingLibrary
             {
                 if (connections[i].RemoteClientID == clientID)
                 {
-                    connections[i].ReceivePacket(syncPacket);
+                    connections[i].PacketReceived(syncPacket);
                 }
             }
 
@@ -651,7 +661,7 @@ namespace NetworkingLibrary
                 remoteClients.Add(remoteClient);
 
                 // Create connection
-                Connection connection = new Connection(localClient, remoteClient);
+                Connection connection = new Connection(localClient, remoteClient, 500);
                 connections.Add(connection);
                 Debug.WriteLine($"Connection created between local: {localClient.IP} {localClient.Port} and remote: {remoteClient.IP} {remoteClient.Port}");
                 ConnectionEstablished(connection);
@@ -668,7 +678,7 @@ namespace NetworkingLibrary
                 remoteClients.Add(remoteClient);
 
                 // Create connection
-                Connection connection = new Connection(localClient, remoteClient);
+                Connection connection = new Connection(localClient, remoteClient, 500);
                 connections.Add(connection);
                 Debug.WriteLine($"Connection created between local: {localClient.IP} {localClient.Port} and remote: {remoteClient.IP} {remoteClient.Port}");
                 ConnectionEstablished(connection);

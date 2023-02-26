@@ -53,7 +53,7 @@ namespace NetworkingLibrary
 
                 IPEndPoint remoteIP = (IPEndPoint)remoteEP;
 
-                Debug.WriteLine($"{bytesReceived} bytes received from IP: {remoteIP.Address}");
+                Debug.WriteLine($"{bytesReceived} bytes received from IP: {remoteIP.Address}", "Packet I/O");
 
                 // Check if packet belongs to game by checking IP address against current connections, or checking if the protocol ID is a match
                 List<string> addresses = networkManager.GetConnectedAddresses();
@@ -102,7 +102,7 @@ namespace NetworkingLibrary
             {
                 Socket socket = (Socket)result.AsyncState;
                 int bytesSent = socket.EndSend(result);
-                Debug.WriteLine("Sent {0} bytes to {1}", bytesSent, remoteEP.Address);
+                Debug.WriteLine("Sent {0} bytes to {1}", bytesSent, remoteEP.Address, "Packet I/O");
 
             } catch (Exception e)
             {
@@ -116,7 +116,6 @@ namespace NetworkingLibrary
 
             string[] split = payload.Split('/');
 
-            PacketType packetType; // <------------------------------------------------------------------------------------------------------------- Comment this out once you know everything else is working
             Packet packet;
             switch (split[2])
             {

@@ -68,6 +68,8 @@ namespace NetworkingLibrary
         int portSource;
         int portDestination;
 
+        DateTime sendTime;
+
         // Used for creating packets on receive
         public Packet(PacketType packetType, string ipSource, int portSource, byte[] data)
         {
@@ -88,6 +90,8 @@ namespace NetworkingLibrary
             this.ipSource = ipSource;
             this.portSource = portSource;
 
+            sendTime = DateTime.Now;
+
             CompressData();
         }
 
@@ -99,6 +103,8 @@ namespace NetworkingLibrary
             this.portDestination = portDestination;
             this.data = data;
             this.packetType = packetType;
+
+            sendTime = DateTime.Now;
 
             CompressData();
         }
@@ -113,6 +119,8 @@ namespace NetworkingLibrary
             this.data = data;
             this.ipDestination = ipDestination;
             this.portDestination = portDestination;
+
+            sendTime = DateTime.Now;
 
             CompressData();
         }
@@ -155,6 +163,11 @@ namespace NetworkingLibrary
         public int Ack
         {
             get { return ack; }
+        }
+
+        public DateTime SendTime
+        {
+            get { return sendTime; }
         }
 
         public PacketType PacketType

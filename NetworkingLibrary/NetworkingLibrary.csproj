@@ -52,7 +52,6 @@
     <Compile Include="Packet.cs" />
     <Compile Include="PacketManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RemoteConstructor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
