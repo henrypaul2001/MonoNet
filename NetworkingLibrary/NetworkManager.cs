@@ -28,6 +28,8 @@ namespace NetworkingLibrary
         #region stuff for unit tests
         internal string LastPayloadSent { get; set; }
         internal byte[] LastLocalClientConnectionRequest { get; set; }
+        internal Dictionary<string, string> LastRemoteConstructPropertiesCreated { get; set; }
+        internal int ConstructRemoteObjectCalls { get; set; }
         #endregion
 
         // List representing networked game objects that need to be synced
@@ -98,10 +100,22 @@ namespace NetworkingLibrary
             get { return pendingClients; }
         }
 
+        internal List<Connection> ConnectionsInternal
+        {
+            set { connections = value; }
+            get { return connections; }
+        }
+
         internal List<Client> PendingClientsInternal
         {
             set { pendingClients = value; }
             get { return  PendingClients; }
+        }
+
+        internal List<Client> RemoteClientsInternal
+        {
+            set { remoteClients = value; }
+            get { return remoteClients; }
         }
 
         public List<Networked_GameObject> NetworkedObjects
@@ -329,7 +343,7 @@ namespace NetworkingLibrary
             }
 
             string typeName = split[7];
-            string typeNamespace = typeName.Substring(0, typeName.IndexOf('.'));
+            string typeNamespace = typeName.Substring(0, typeName.LastIndexOf('.'));
             Type objType = Type.GetType($"{typeName}, {typeNamespace}");
             if (objType == null)
             {
@@ -369,6 +383,8 @@ namespace NetworkingLibrary
                 properties.Add(propertyKey, propertyValue);
                 propertyIndex++;
             }
+
+            LastRemoteConstructPropertiesCreated = properties;
 
             // Pass values to abstract method so developer can create local instance of networked object
             ConstructRemoteObject(clientID, objectID, objType, properties);

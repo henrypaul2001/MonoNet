@@ -26,7 +26,7 @@ namespace NetworkingLibrary.Tests
 
         public override void ConstructRemoteObject(int clientID, int objectID, Type objectType, Dictionary<string, string> properties)
         {
-            
+            ConstructRemoteObjectCalls++;
         }
     }
 }
