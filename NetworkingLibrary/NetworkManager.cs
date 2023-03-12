@@ -25,6 +25,11 @@ namespace NetworkingLibrary
 
     public abstract class NetworkManager
     {
+        #region stuff for unit tests
+        internal string LastPayloadSent { get; set; }
+        internal byte[] LastLocalClientConnectionRequest { get; set; }
+        #endregion
+
         // List representing networked game objects that need to be synced
         List<Networked_GameObject> networkedObjects;
 
@@ -91,6 +96,12 @@ namespace NetworkingLibrary
         public List<Client> PendingClients
         {
             get { return pendingClients; }
+        }
+
+        internal List<Client> PendingClientsInternal
+        {
+            set { pendingClients = value; }
+            get { return  PendingClients; }
         }
 
         public List<Networked_GameObject> NetworkedObjects
@@ -249,13 +260,13 @@ namespace NetworkingLibrary
                         payload += $"{field.Name}={field.GetValue(networkedObjects[i])}/";
                     }
                     payload += "VAREND/";
-
+                    LastPayloadSent = payload;
                     CreateAndSendSyncOrConstructPacket(PacketType.SYNC, payload, "ALL", -1);
                 }
             }
         }
 
-        private void CreateAndSendSyncOrConstructPacket(PacketType packetType, string payload, string destinationIP, int destinationPort)
+        internal void CreateAndSendSyncOrConstructPacket(PacketType packetType, string payload, string destinationIP, int destinationPort)
         {
             Packet packet;
             for (int j = 0; j < connections.Count; j++)
@@ -502,7 +513,7 @@ namespace NetworkingLibrary
 
         public void ConnectLocalClientToHost(string ip, int port)
         {
-            localClient.RequestConnection(ip, port);
+            LastLocalClientConnectionRequest = localClient.RequestConnection(ip, port);
         }
 
         internal void HandleDisconnect(Packet disconnectPacket)
