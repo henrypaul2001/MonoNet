@@ -62,6 +62,7 @@ namespace NetworkingLibrary.Tests
             }
         }
 
+        #region ConnectionAcceptTests
         [Test()]
         public void HandleConnectionAcceptTest_LocalClientIsReceiverOfInitialRequest_And_NoConnectionsToCopy_And_ConnectionEstablishedSuccesfully()
         {
@@ -201,5 +202,134 @@ namespace NetworkingLibrary.Tests
                 Assert.Fail("Client not removed from pending list");
             }
         }
+
+        [Test()]
+        public void HandleConnectionAcceptTest_LocalClientIsSenderOfInitialRequest_And_NoConnectionsToCopy_And_ConnectionEstablishedSuccesfully()
+        {
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+
+            string packetSourceIP = "155.155.2.3";
+            int sourceClientID = 567;
+
+            byte[] data = Encoding.ASCII.GetBytes($"0/25/ACCEPT/id={sourceClientID}/isHost=true/isServer=false/connectionNum=0/END");
+            Packet acceptPacket = new Packet("123.125.5.5", packetSourceIP, 28000, data, PacketType.ACCEPT);
+
+            // Act
+            manager.HandleConnectionAccept(acceptPacket);
+
+            bool isClientAddedToRemoteList = false;
+            bool isAcceptReturned = false;
+
+            // Is client added to remote list
+            foreach (Client client in manager.RemoteClients)
+            {
+                if (client.ID == sourceClientID)
+                {
+                    isClientAddedToRemoteList = true;
+                }
+            }
+
+            // Is accept returned
+            if (manager.LocalClient.acceptConnectionCalls == 1)
+            {
+                isAcceptReturned = true;
+            }
+
+            manager.Close();
+
+            // Assert
+            if (!isAcceptReturned)
+            {
+                Assert.Fail("Connection accept wasn't returned to remote client");
+            }
+            else if (!isClientAddedToRemoteList)
+            {
+                Assert.Fail("Accepted client wasn't added to remote clients list");
+            }
+            else if (isClientAddedToRemoteList && isAcceptReturned)
+            {
+                Assert.Pass();
+            }
+        }
+
+        [Test()]
+        public void HandleConnectionAcceptTest_LocalClientIsSenderOfInitialRequest_And_TwoConnectionsToCopy_And_ConnectionEstablishedSuccesfully()
+        {
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+
+            string packetSourceIP = "155.155.2.3";
+            int sourceClientID = 567;
+
+            string connection1IP = "155.155.2.5";
+            string connection2IP = "200.200.6.3";
+            int connection1Port = 28500;
+            int connection2Port = 28875;
+
+            byte[] data = Encoding.ASCII.GetBytes($"0/25/ACCEPT/id={sourceClientID}/isHost=true/isServer=false/connectionNum=2/connection1IP={connection1IP}/connection1Port={connection1Port}/connection2IP={connection2IP}/connection2Port={connection2Port}/END");
+            Packet acceptPacket = new Packet("123.125.5.5", packetSourceIP, 28000, data, PacketType.ACCEPT);
+
+            // Act
+            manager.HandleConnectionAccept(acceptPacket);
+
+            bool isClientAddedToRemoteList = false;
+            bool isAcceptReturned = false;
+
+            // Is client added to remote list
+            foreach (Client client in manager.RemoteClients)
+            {
+                if (client.ID == sourceClientID)
+                {
+                    isClientAddedToRemoteList = true;
+                }
+            }
+
+            // Is accept returned
+            if (manager.LocalClient.acceptConnectionCalls == 1)
+            {
+                isAcceptReturned = true;
+            }
+
+            // Assert
+
+            // Check if a connection request has been sent to the two clients detailed in the accept packet
+            if (manager.LocalClient.requestConnectionCalls < 2)
+            {
+                manager.Close();
+                Assert.Fail("Local client has not attempted to copy all connections of remote client");
+            }
+            else if (manager.LocalClient.requestConnectionCalls > 2)
+            {
+                manager.Close();
+                Assert.Fail("Local client has attempted to copy too many connections");
+            }
+
+            // Check if the correct IPs have had a request sent to
+            if (manager.LocalClient.requestConnectionCalls == 2)
+            {
+                if (!manager.LocalClient.IPsConnectionRequestSentTo.Contains(connection1IP) || !manager.LocalClient.IPsConnectionRequestSentTo.Contains(connection2IP))
+                {
+                    manager.Close();
+                    Assert.Fail("Local client has not requested connections to correct IP addresses when copying remote client");
+                }
+            }
+
+            manager.Close();
+
+            if (!isAcceptReturned)
+            {
+                Assert.Fail("Connection accept wasn't returned to remote client");
+            }
+            else if (!isClientAddedToRemoteList)
+            {
+                Assert.Fail("Accepted client wasn't added to remote clients list");
+            }
+            else if (isClientAddedToRemoteList && isAcceptReturned)
+            {
+                Assert.Pass();
+            }
+        }
+        #endregion
     }
 }

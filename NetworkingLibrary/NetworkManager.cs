@@ -657,7 +657,7 @@ namespace NetworkingLibrary
             if (pendingClientIDs.Contains(remoteID))
             {
                 // If this is true, the current code path is being run on the client that initially received the connection request
-
+                
                 // Get remote client from pending clients list
                 Client remoteClient = null;
                 foreach (Client client in pendingClients)
@@ -683,7 +683,7 @@ namespace NetworkingLibrary
             else
             {
                 // If false, the current code path is being run on the client that sent the initial connection request
-
+                
                 // Create remote client
                 Client remoteClient = new Client(acceptPacket.IPSource, acceptPacket.PortSource, remoteIsHost, remoteIsServer, remoteID, this);
                 remoteClients.Add(remoteClient);

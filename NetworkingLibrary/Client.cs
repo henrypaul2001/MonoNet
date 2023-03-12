@@ -14,6 +14,8 @@ namespace NetworkingLibrary
         #region stuff for unit tests
         internal List<string> IPsConnectionRequestSentTo = new List<string>();
         internal int requestConnectionCalls = 0;
+
+        internal int acceptConnectionCalls = 0;
         #endregion
 
         int id;
@@ -142,6 +144,8 @@ namespace NetworkingLibrary
 
         internal void AcceptConnection(Packet connectionPacket)
         {
+            acceptConnectionCalls++;
+
             string ip = connectionPacket.IPSource;
             int destinationPort = connectionPacket.PortSource;
 
