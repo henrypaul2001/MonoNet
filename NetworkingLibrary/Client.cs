@@ -11,6 +11,11 @@ namespace NetworkingLibrary
 {
     public class Client
     {
+        #region stuff for unit tests
+        internal List<string> IPsConnectionRequestSentTo = new List<string>();
+        internal int requestConnectionCalls = 0;
+        #endregion
+
         int id;
         int port;
         int protocolID;
@@ -126,6 +131,8 @@ namespace NetworkingLibrary
 
         internal byte[] RequestConnection(string ip, int portDestination)
         {
+            requestConnectionCalls++;
+            IPsConnectionRequestSentTo.Add(ip);
             byte[] data = Encoding.ASCII.GetBytes($"0/{protocolID}/REQUEST/id={id}/isHost={isHost}/isServer={isServer}");
             Packet connectionPacket = new Packet(ip, this.ip, portDestination, data, PacketType.CONNECT);
             networkManager.PacketManager.SendPacket(connectionPacket, ref socket);

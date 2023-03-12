@@ -85,6 +85,8 @@ namespace NetworkingLibrary.Tests
             bool removedFromPending = true;
             bool addedToRemote = false;
 
+            manager.Close();
+
             // Check if client has been removed from pending list
             foreach (Client client in pendingClients)
             {
@@ -129,7 +131,9 @@ namespace NetworkingLibrary.Tests
 
             string connection1IP = "155.155.2.5";
             string connection2IP = "200.200.6.3";
-            byte[] data = Encoding.ASCII.GetBytes($"0/25/ACCEPT/id=567/isHost=true/isServer=false/connectionNum=2/connectionIP={connection1IP}/connectionIP={connection2IP}END");
+            int connection1Port = 28500;
+            int connection2Port = 28875;
+            byte[] data = Encoding.ASCII.GetBytes($"0/25/ACCEPT/id=567/isHost=true/isServer=false/connectionNum=2/connection1IP={connection1IP}/connection2Port={connection1Port}/connection2IP={connection2IP}/connection2Port={connection2Port}/END");
             Packet acceptPacket = new Packet("123.125.5.5", pendingClients[0].IP, 28000, data, PacketType.ACCEPT);
 
             // Act
@@ -158,10 +162,44 @@ namespace NetworkingLibrary.Tests
                 }
             }
 
-            // Check if a connection request has been sent to the two clients detailed in the accept packet
-
-
             // Assert
+
+            // Check if a connection request has been sent to the two clients detailed in the accept packet
+            if (manager.LocalClient.requestConnectionCalls < 2)
+            {
+                manager.Close();
+                Assert.Fail("Local client has not attempted to copy all connections of remote client");
+            }
+            else if (manager.LocalClient.requestConnectionCalls > 2)
+            {
+                manager.Close();
+                Assert.Fail("Local client has attempted to copy too many connections");
+            }
+
+            // Check if the correct IPs have had a request sent to
+            if (manager.LocalClient.requestConnectionCalls == 2)
+            {
+                if (!manager.LocalClient.IPsConnectionRequestSentTo.Contains(connection1IP) || !manager.LocalClient.IPsConnectionRequestSentTo.Contains(connection2IP))
+                {
+                    manager.Close();
+                    Assert.Fail("Local client has not requested connections to correct IP addresses when copying remote client");
+                }
+            }
+
+            manager.Close();
+
+            if (initialClientAddedToRemote && initialClientRemovedFromPending)
+            {
+                Assert.Pass();
+            }
+            if (!initialClientAddedToRemote)
+            {
+                Assert.Fail("Client not added to remote clients list");
+            }
+            if (!initialClientRemovedFromPending)
+            {
+                Assert.Fail("Client not removed from pending list");
+            }
         }
     }
 }
