@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace NetworkingLibrary.Tests
 {
-    internal class TestNetworkedObject : Networked_GameObject
+    public class TestNetworkedObject : Networked_GameObject
     {
 
         [NetworkedVariable]

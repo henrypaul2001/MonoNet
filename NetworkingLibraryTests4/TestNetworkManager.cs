@@ -8,7 +8,7 @@ using NetworkingLibrary;
 
 namespace NetworkingLibrary.Tests
 {
-    internal class TestNetworkManager : NetworkManager
+    public class TestNetworkManager : NetworkManager
     {
         public TestNetworkManager(ConnectionType connectionType, int protocolID, int port) : base(connectionType, protocolID, port)
         {

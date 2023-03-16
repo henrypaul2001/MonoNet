@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,7 +14,7 @@ namespace NetworkingLibrary.Tests
     public class PacketProcessingTests
     {
         [Test()]
-        public void ProcessConstructPacketTest()
+        public void ProcessConstructPacketTest_IsRemoteObjectConstructed_And_IsConnectionUpdated_And_IsConstructDictionaryCreatedProperly()
         {
             // Arrange
             string sourceIP = "150.150.7.7";
@@ -23,6 +24,8 @@ namespace NetworkingLibrary.Tests
             int clientID = 567;
 
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+            Type type = typeof(TestNetworkedObject);
+            System.Reflection.Assembly assembly = type.Assembly;
 
             Client fakeRemoteClient = new Client(sourceIP, sourcePort, false, false, clientID, manager);
 
@@ -37,10 +40,8 @@ namespace NetworkingLibrary.Tests
             Type objType = obj.GetType();
 
             byte[] data = Encoding.ASCII.GetBytes($"0/25/ACCEPT/{localSequence}/{remoteSequence}/id={clientID}/objID={obj.ObjectID}/{objType.FullName}/PROPSTART/test=testValue/anotherTest=anotherTestValue/PROPEND/");
-            Packet constructPacket = new Packet("123.125.5.5", sourceIP, 28000, data, PacketType.CONSTRUCT);
+            Packet constructPacket = new Packet(PacketType.CONSTRUCT, localSequence, remoteSequence, AckBitfield.Ack1, sourceIP, sourcePort, data);
 
-            // I think the reason this fails is because of the differing assemblies between the test project and the main project. The assembly name needs to be included in the packet
-            // so that the library can load the correct assembly before searching for the type
 
             // Act
             manager.ProcessConstructPacket(constructPacket);
@@ -48,7 +49,7 @@ namespace NetworkingLibrary.Tests
             // Assert
 
             bool isConnectionSequenceUpdated = false;
-            bool isConstructDictionaryCreatedProperly = false;
+            bool isConstructDictionaryCreatedProperly = true;
             bool isConstructRemoteObjectCalled = false;
 
             // Check if connection sequence gets updated
@@ -64,9 +65,12 @@ namespace NetworkingLibrary.Tests
             }
 
             // Is the properties dictionary created properly?
-            if (manager.LastRemoteConstructPropertiesCreated == constructProperties)
+            foreach (KeyValuePair<string, string> pair in manager.LastRemoteConstructPropertiesCreated)
             {
-                isConstructDictionaryCreatedProperly = true;
+                if (!constructProperties.Contains(pair))
+                {
+                    isConstructDictionaryCreatedProperly = false;
+                }
             }
 
             // Does the ConstructRemoteObject method get called?
