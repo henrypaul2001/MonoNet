@@ -157,7 +157,7 @@ namespace NetworkingLibrary
             }
         }
 
-        private Packet CreateConstructOrSyncPacket(PacketType packetType, byte[] data, string sourceIP, int sourcePort)
+        internal Packet CreateConstructOrSyncPacket(PacketType packetType, byte[] data, string sourceIP, int sourcePort)
         {
             string payload = Encoding.ASCII.GetString(data, 0, data.Length);
 

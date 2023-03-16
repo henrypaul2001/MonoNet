@@ -30,6 +30,7 @@ namespace NetworkingLibrary
         internal byte[] LastLocalClientConnectionRequest { get; set; }
         internal Dictionary<string, string> LastRemoteConstructPropertiesCreated { get; set; }
         internal int ConstructRemoteObjectCalls { get; set; }
+        internal Assembly TestAssembly {get; set;}
         #endregion
 
         // List representing networked game objects that need to be synced
@@ -58,6 +59,9 @@ namespace NetworkingLibrary
 
         public NetworkManager(ConnectionType connectionType, int protocolID, int port)
         {
+            // Load testing assembly
+            TestAssembly = Assembly.Load("NetworkingLibraryTests4");
+
             this.connectionType = connectionType;
             this.protocolID = protocolID;
             this.port = port;
@@ -347,9 +351,26 @@ namespace NetworkingLibrary
             Type objType = Type.GetType($"{typeName}, {typeNamespace}");
             if (objType == null)
             {
-                // Oh dear
-                Debug.WriteLine("Error parsing object type, packet ignored");
-                return;
+                if (TestAssembly != null)
+                {
+                    // Try finding type from the test assembly
+                    Type[] types = TestAssembly.GetTypes(); 
+                    foreach (Type t in types)
+                    {
+                        if (t.FullName == typeName)
+                        {
+                            objType = t;
+                            break;
+                        }
+                    }
+
+                    if (objType == null)
+                    {
+                        // Oh dear
+                        Debug.WriteLine("Error parsing object type, packet ignored");
+                        return;
+                    }
+                }
             }
 
             // Find the connection associated with the client ID so that packet sequencing can be updated
