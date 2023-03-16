@@ -3,10 +3,12 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Management.Instrumentation;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using System.Reflection;
 
 namespace NetworkingLibrary.Tests
 {
@@ -24,8 +26,6 @@ namespace NetworkingLibrary.Tests
             int clientID = 567;
 
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
-            Type type = typeof(TestNetworkedObject);
-            System.Reflection.Assembly assembly = type.Assembly;
 
             Client fakeRemoteClient = new Client(sourceIP, sourcePort, false, false, clientID, manager);
 
@@ -39,9 +39,8 @@ namespace NetworkingLibrary.Tests
             TestNetworkedObject obj = new TestNetworkedObject(manager, clientID, constructProperties);
             Type objType = obj.GetType();
 
-            byte[] data = Encoding.ASCII.GetBytes($"0/25/ACCEPT/{localSequence}/{remoteSequence}/id={clientID}/objID={obj.ObjectID}/{objType.FullName}/PROPSTART/test=testValue/anotherTest=anotherTestValue/PROPEND/");
+            byte[] data = Encoding.ASCII.GetBytes($"0/25/CONSTRUCT/{localSequence}/{remoteSequence}/id={clientID}/objID={obj.ObjectID}/{objType.FullName}/PROPSTART/test=testValue/anotherTest=anotherTestValue/PROPEND/");
             Packet constructPacket = new Packet(PacketType.CONSTRUCT, localSequence, remoteSequence, AckBitfield.Ack1, sourceIP, sourcePort, data);
-
 
             // Act
             manager.ProcessConstructPacket(constructPacket);
@@ -103,6 +102,48 @@ namespace NetworkingLibrary.Tests
             {
                 manager.Close();
                 Assert.Pass();
+            }
+        }
+
+        [Test()]
+        public void ProcessSyncPacketTest_IsNetworkedVariableUpdatedCorrectly()
+        {
+            // Arrange
+            string sourceIP = "150.150.7.7";
+            int sourcePort = 28000;
+            int localSequence = 1;
+            int remoteSequence = 1;
+            int clientID = 567;
+            int objID = 250;
+
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+
+            Client fakeRemoteClient = new Client(sourceIP, sourcePort, false, false, clientID, manager);
+
+            manager.RemoteClientsInternal.Add(fakeRemoteClient);
+
+            Connection fakeConnection = new Connection(manager.LocalClient, fakeRemoteClient, 5);
+            manager.ConnectionsInternal.Add(fakeConnection);
+
+            TestNetworkedObject obj = new TestNetworkedObject(manager, clientID, objID);
+            Type objType = obj.GetType();
+
+            byte[] data = Encoding.ASCII.GetBytes($"/25/SYNC/{localSequence}/{remoteSequence}/id={clientID}/objID={objID}/VARSTART/testVariable=2/VAREND/");
+            Packet syncPacket = new Packet(PacketType.SYNC, localSequence, remoteSequence, AckBitfield.Ack1, sourceIP, sourcePort, data);
+
+            // Act
+            manager.ProcessSyncPacket(syncPacket);
+
+            // Assert
+            object remoteObj = manager.GetNetworkedObjectFromClientAndObjectID(clientID, objID);
+            FieldInfo field = manager.GetNetworkedObjectFromClientAndObjectID(clientID, objID).GetType().GetField("testVariable");
+            if ((int)field.GetValue(remoteObj) == 2)
+            {
+                Assert.Pass();
+            }
+            else
+            {
+                Assert.Fail("testVariable was not updated to sync value of '2'");
             }
         }
     }

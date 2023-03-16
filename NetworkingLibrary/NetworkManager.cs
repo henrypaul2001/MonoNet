@@ -519,7 +519,7 @@ namespace NetworkingLibrary
             }
         }
 
-        Networked_GameObject GetNetworkedObjectFromClientAndObjectID(int clientID, int objectID)
+        internal Networked_GameObject GetNetworkedObjectFromClientAndObjectID(int clientID, int objectID)
         {
             foreach (Networked_GameObject obj in networkedObjects)
             {

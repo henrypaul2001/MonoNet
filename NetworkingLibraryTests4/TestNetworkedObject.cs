@@ -11,16 +11,16 @@ namespace NetworkingLibrary.Tests
     {
 
         [NetworkedVariable]
-        public int TestVariable;
+        public int testVariable;
 
         public TestNetworkedObject(NetworkManager networkManager, int clientID, Dictionary<string, string> constructProperties) : base(networkManager, clientID, constructProperties)
         {
-            TestVariable = 1;
+            testVariable = 1;
         }
 
         public TestNetworkedObject(NetworkManager networkManager, int clientID, int objectID) : base(networkManager, clientID, objectID)
         {
-            TestVariable = 1;
+            testVariable = 1;
         }
     }
 }
