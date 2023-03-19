@@ -191,7 +191,41 @@ namespace NetworkingLibrary.Tests
         [Test()]
         public void CloseTest()
         {
-            Assert.Fail();
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+
+            // Act
+            manager.Close();
+
+            // Assert
+            if (manager.Connections != null)
+            {
+                Assert.Fail("Connections list hasn't been nullified");
+            }
+            if (manager.RemoteClients != null)
+            {
+                Assert.Fail("Remote clients list hasn't been nullified");
+            }
+            if (manager.LocalClient != null)
+            {
+                Assert.Fail("Local client hasn't been nullified");
+            }
+            if (manager.PacketManager != null)
+            {
+                Assert.Fail("Packet manager hasn't been nullified");
+            }
+            if (manager.PendingClients != null)
+            {
+                Assert.Fail("Pending clients list hasn't been nullified");
+            }
+            if (manager.NetworkedObjects != null)
+            {
+                Assert.Fail("Networked objects list hasn't been nullified");
+            }
+            if (manager.DisconnectLocalClientCalls != 1)
+            {
+                Assert.Fail("DisconnectLocalClient method hasn't been called");
+            }
         }
     }
 }

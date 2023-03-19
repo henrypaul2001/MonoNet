@@ -32,6 +32,7 @@ namespace NetworkingLibrary
         internal int ConstructRemoteObjectCalls { get; set; }
         internal Assembly TestAssembly {get; set;}
         internal List<string> PayloadsSent { get; set; }
+        internal int DisconnectLocalClientCalls { get; set; }
         #endregion
 
         // List representing networked game objects that need to be synced
@@ -105,6 +106,11 @@ namespace NetworkingLibrary
         public List<Client> PendingClients
         {
             get { return pendingClients; }
+        }
+
+        public List<Connection> Connections
+        {
+            get { return connections; }
         }
 
         internal List<Connection> ConnectionsInternal
@@ -542,6 +548,7 @@ namespace NetworkingLibrary
 
         private void DisconnectLocalClient()
         {
+            DisconnectLocalClientCalls++;
             // Create disconnect packet and pass to packet manager
             byte[] data = Encoding.ASCII.GetBytes($"0/{protocolID}/DISCONNECT/id={localClient.ID}");
 
@@ -558,7 +565,7 @@ namespace NetworkingLibrary
             LastLocalClientConnectionRequest = localClient.RequestConnection(ip, port);
         }
 
-        internal void HandleDisconnect(Packet disconnectPacket)
+        internal void ProcessDisconnectPacket(Packet disconnectPacket)
         {
             // Find the client that disconnected
             string data = Encoding.ASCII.GetString(disconnectPacket.Data);

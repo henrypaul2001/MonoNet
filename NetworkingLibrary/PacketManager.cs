@@ -152,7 +152,7 @@ namespace NetworkingLibrary
 
                     // Create disconnect packet and pass to network manager
                     packet = new Packet(PacketType.DISCONNECT, sourceIP, sourcePort, data);
-                    networkManager.HandleDisconnect(packet);
+                    networkManager.ProcessDisconnectPacket(packet);
                     break;
             }
         }
