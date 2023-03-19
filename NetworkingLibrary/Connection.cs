@@ -177,5 +177,10 @@ namespace NetworkingLibrary
                 }
             }
         }
+
+        public override string ToString()
+        {
+            return $"LocalIP: {localClient.IP}/LocalPort: {localClient.Port}/RemoteIP: {remoteClient.IP}/RemotePort: {remoteClient.Port}";
+        }
     }
 }
