@@ -69,9 +69,47 @@ namespace NetworkingLibrary.Tests
         }
 
         [Test()]
-        public void ClientTimeoutTest()
+        public void ClientTimeoutTest_IsClientRemovedFromRemotes_And_IsConnectionRemoved()
         {
-            Assert.Fail();
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+
+            Client fakeRemoteClient1 = new Client("125.125.1.1", 27000, false, false, 111, manager);
+            manager.RemoteClientsInternal.Add(fakeRemoteClient1);
+            Client fakeRemoteClient2 = new Client("122.122.2.2", 27000, false, false, 222, manager);
+            manager.RemoteClientsInternal.Add(fakeRemoteClient2);
+
+            Connection fakeConnection1 = new Connection(manager.LocalClient, fakeRemoteClient1, 5);
+            manager.ConnectionsInternal.Add(fakeConnection1);
+            Connection fakeConnection2 = new Connection(manager.LocalClient, fakeRemoteClient2, 5);
+            manager.ConnectionsInternal.Add(fakeConnection2);
+
+            List<Client> expectedRemoteClients = new List<Client>() { fakeRemoteClient2 };
+            List<Connection> expectedConnections = new List<Connection>() { fakeConnection2 };
+
+            // Act
+            manager.ClientTimeout(fakeRemoteClient1);
+
+            List<Client> actualRemoteClients = manager.RemoteClientsInternal;
+            List<Connection> actualConnections = manager.ConnectionsInternal;
+
+            manager.Close();
+
+            // Assert
+            for (int i = 0; i < actualRemoteClients.Count(); i++)
+            {
+                if (actualRemoteClients[i] != expectedRemoteClients[i])
+                {
+                    Assert.Fail($"Expected remote clients was different to actual remote clients\n\nExpected: {expectedRemoteClients[i]}\nActual: {actualRemoteClients[i]}");
+                }
+            }
+            for (int i = 0; i < actualConnections.Count(); i++)
+            {
+                if (actualConnections[i] != expectedConnections[i])
+                {
+                    Assert.Fail($"Expected connections was different to actual connections\n\nExpected: {expectedConnections[i]}\nActual: {actualConnections[i]}");
+                }
+            }
         }
 
         [Test()]
@@ -82,10 +120,8 @@ namespace NetworkingLibrary.Tests
 
             Client fakeRemoteClient1 = new Client("125.125.1.1", 27000, false, false, 111, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient1);
-
             Client fakeRemoteClient2 = new Client("122.122.2.2", 27000, false, false, 222, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient2);
-
             Client fakeRemoteClient3 = new Client("133.133.3.3", 28000, false, false, 333, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient3);
 
