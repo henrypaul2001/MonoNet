@@ -46,7 +46,6 @@ namespace NetworkingLibrary.Tests
             manager.ProcessConstructPacket(constructPacket);
 
             // Assert
-
             bool isConnectionSequenceUpdated = false;
             bool isConstructDictionaryCreatedProperly = true;
             bool isConstructRemoteObjectCalled = false;

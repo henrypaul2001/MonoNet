@@ -31,6 +31,7 @@ namespace NetworkingLibrary
         internal Dictionary<string, string> LastRemoteConstructPropertiesCreated { get; set; }
         internal int ConstructRemoteObjectCalls { get; set; }
         internal Assembly TestAssembly {get; set;}
+        internal List<string> PayloadsSent { get; set; }
         #endregion
 
         // List representing networked game objects that need to be synced
@@ -61,6 +62,8 @@ namespace NetworkingLibrary
         {
             // Load testing assembly
             TestAssembly = Assembly.Load("NetworkingLibraryTests4");
+
+            PayloadsSent = new List<string>(3);
 
             this.connectionType = connectionType;
             this.protocolID = protocolID;
@@ -177,6 +180,7 @@ namespace NetworkingLibrary
                         }
                     }
                     payload += "PROPEND/";
+                    PayloadsSent.Add(payload);
                     CreateAndSendSyncOrConstructPacket(PacketType.CONSTRUCT, payload, destinationConnection.RemoteClient.IP, destinationConnection.RemoteClient.Port);
                     /*
                     Type objType = networkedObjects[i].GetType();
@@ -315,6 +319,7 @@ namespace NetworkingLibrary
                         packet = new Packet(packetType, localSequence, remoteSequence, ackBitfield, dataWithAckAndLength, connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
 
                         // Send packet
+                        LastPayloadSent = payload;
                         connections[j].PacketSent(packet);
                         packetManager.SendPacket(packet, ref localClient.Socket);
                     }
