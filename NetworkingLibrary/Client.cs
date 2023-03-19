@@ -176,5 +176,10 @@ namespace NetworkingLibrary
             socket.Shutdown(SocketShutdown.Both);
             socket.Close();
         }
+
+        public override string ToString()
+        {
+            return $"IP={IP}/PORT={Port}/ID:{ID}";
+        }
     }
 }

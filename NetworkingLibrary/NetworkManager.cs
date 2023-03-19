@@ -747,9 +747,23 @@ namespace NetworkingLibrary
 
         public virtual void ClientTimeout(Client lostClient)
         {
-            /*called when a client times out. Calls a game specific timeout method to give developer more
-             * control over what happens when a client times out. Removes lostClient from client list
-             */
+            foreach (Connection connection in connections)
+            {
+                if (connection.RemoteClient == lostClient)
+                {
+                    connections.Remove(connection);
+                    break;
+                }
+            }
+            
+            foreach (Client client in remoteClients)
+            {
+                if (client == lostClient)
+                {
+                    remoteClients.Remove(client);
+                    break;
+                }
+            }
         }
 
         public List<int> GetClientIDs()
