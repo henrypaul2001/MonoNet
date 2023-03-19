@@ -132,7 +132,24 @@ namespace NetworkingLibrary.Tests
         [Test()]
         public void GetPendingAddressesTest()
         {
-            Assert.Fail();
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+
+            Client fakeRemoteClient1 = new Client("125.125.1.1", 27000, false, false, 111, manager);
+            manager.PendingClientsInternal.Add(fakeRemoteClient1);
+            Client fakeRemoteClient2 = new Client("122.122.2.2", 27000, false, false, 222, manager);
+            manager.PendingClientsInternal.Add(fakeRemoteClient2);
+            Client fakeRemoteClient3 = new Client("133.133.3.3", 28000, false, false, 333, manager);
+            manager.PendingClientsInternal.Add(fakeRemoteClient3);
+
+            List<string> expected = new List<string> { fakeRemoteClient1.IP, fakeRemoteClient2.IP, fakeRemoteClient3.IP };
+
+            // Act
+            List<string> actual = manager.GetPendingAddresses();
+            manager.Close();
+
+            // Assert
+            Assert.AreEqual(expected, actual);
         }
 
         [Test()]
