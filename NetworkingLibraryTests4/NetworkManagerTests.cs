@@ -12,18 +12,6 @@ namespace NetworkingLibrary.Tests
     public class NetworkManagerTests
     {
         [Test()]
-        public void NetworkManagerTest()
-        {
-            Assert.Fail();
-        }
-
-        [Test()]
-        public void UpdateTest()
-        {
-            Assert.Fail();
-        }
-
-        [Test()]
         public void SendLocalObjectsTest_1Object_IsPayloadConstructedCorrectly()
         {
             // Arrange
@@ -82,36 +70,6 @@ namespace NetworkingLibrary.Tests
         }
 
         [Test()]
-        public void ConnectLocalClientToHostTest()
-        {
-            Assert.Fail();
-        }
-
-        [Test()]
-        public void HandleConnectionRequestTest()
-        {
-            Assert.Fail();
-        }
-
-        [Test()]
-        public void HandleConnectionAcceptTest()
-        {
-            Assert.Fail();
-        }
-
-        [Test()]
-        public void ConnectionEstablishedTest()
-        {
-            Assert.Fail();
-        }
-
-        [Test()]
-        public void ClientDisconnectTest()
-        {
-            Assert.Fail();
-        }
-
-        [Test()]
         public void ClientTimeoutTest()
         {
             Assert.Fail();
@@ -120,7 +78,26 @@ namespace NetworkingLibrary.Tests
         [Test()]
         public void GetClientIDsTest()
         {
-            Assert.Fail();
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+
+            Client fakeRemoteClient1 = new Client("125.125.1.1", 27000, false, false, 111, manager);
+            manager.RemoteClientsInternal.Add(fakeRemoteClient1);
+
+            Client fakeRemoteClient2 = new Client("122.122.2.2", 27000, false, false, 222, manager);
+            manager.RemoteClientsInternal.Add(fakeRemoteClient2);
+
+            Client fakeRemoteClient3 = new Client("133.133.3.3", 28000, false, false, 333, manager);
+            manager.RemoteClientsInternal.Add(fakeRemoteClient3);
+
+            List<int> expected = new List<int> { 111, 222, 333 };
+
+            // Act
+            List<int> actual = manager.GetClientIDs();
+            manager.Close();
+
+            // Assert
+            Assert.AreEqual(expected, actual);
         }
 
         [Test()]
