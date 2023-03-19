@@ -12,7 +12,7 @@ namespace NetworkingLibrary.Tests
     public class NetworkManagerTests
     {
         [Test()]
-        public void SendLocalObjectsTest_1Object_IsPayloadConstructedCorrectly()
+        public void SendLocalObjectsTest_3Objects_ArePayloadsConstructedCorrectly()
         {
             // Arrange
             string destinationIP = "150.150.7.7";
@@ -25,7 +25,6 @@ namespace NetworkingLibrary.Tests
             TestNetworkedObject localObject3 = new TestNetworkedObject(manager, 25, new Dictionary<string, string>() { { "test3", "test3Value" } });
 
             Client fakeRemoteClient = new Client(destinationIP, destinationPort, false, false, clientID, manager);
-
             manager.RemoteClientsInternal.Add(fakeRemoteClient);
 
             Connection fakeConnection = new Connection(manager.LocalClient, fakeRemoteClient, 5);
@@ -103,7 +102,31 @@ namespace NetworkingLibrary.Tests
         [Test()]
         public void GetConnectedAddressesTest()
         {
-            Assert.Fail();
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+
+            Client fakeRemoteClient1 = new Client("125.125.1.1", 27000, false, false, 111, manager);
+            manager.RemoteClientsInternal.Add(fakeRemoteClient1);
+            Client fakeRemoteClient2 = new Client("122.122.2.2", 27000, false, false, 222, manager);
+            manager.RemoteClientsInternal.Add(fakeRemoteClient2);
+            Client fakeRemoteClient3 = new Client("133.133.3.3", 28000, false, false, 333, manager);
+            manager.RemoteClientsInternal.Add(fakeRemoteClient3);
+
+            Connection fakeConnection1 = new Connection(manager.LocalClient, fakeRemoteClient1, 5);
+            manager.ConnectionsInternal.Add(fakeConnection1);
+            Connection fakeConnection2 = new Connection(manager.LocalClient, fakeRemoteClient2, 5);
+            manager.ConnectionsInternal.Add(fakeConnection2);
+            Connection fakeConnection3 = new Connection(manager.LocalClient, fakeRemoteClient3, 5);
+            manager.ConnectionsInternal.Add(fakeConnection3);
+
+            List<string> expected = new List<string> { fakeConnection1.RemoteClient.IP, fakeConnection2.RemoteClient.IP, fakeConnection3.RemoteClient.IP };
+
+            // Act
+            List<string> actual = manager.GetConnectedAddresses();
+            manager.Close();
+
+            // Assert
+            Assert.AreEqual(expected, actual);
         }
 
         [Test()]
