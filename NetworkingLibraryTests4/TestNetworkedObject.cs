@@ -9,7 +9,6 @@ namespace NetworkingLibrary.Tests
 {
     public class TestNetworkedObject : Networked_GameObject
     {
-
         [NetworkedVariable]
         public int testVariable;
 
