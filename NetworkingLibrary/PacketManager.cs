@@ -21,12 +21,7 @@ namespace NetworkingLibrary
             this.networkManager = networkManager;
         }
 
-        internal static void ProcessPacket(Packet packet)
-        {
-            // Process the byte array of packet in packetQueue
-        }
-
-        internal void StartReceiving(ref Socket socket, NetworkManager networkManager)
+        internal void StartReceiving(Socket socket, NetworkManager networkManager)
         {
             byte[] buffer = new byte[1024];
 
@@ -72,19 +67,19 @@ namespace NetworkingLibrary
                     ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
                 }
 
-                StartReceiving(ref socket, networkManager);
+                StartReceiving(socket, networkManager);
             } catch (Exception e)
             {
                 Debug.WriteLine(e);
             }
         }
 
-        internal void ReceivePacket(ref Socket socket)
+        internal void ReceivePacket(Socket socket)
         {
             // Constructs a custom packet object based on the byte array it received and adds it to the packetqueue
         }
 
-        internal void SendPacket(Packet packet, ref Socket socket)
+        internal void SendPacket(Packet packet, Socket socket)
         {
             // Send a packet to it's destination
             IPEndPoint destination = new IPEndPoint(IPAddress.Parse(packet.IPDestination), packet.PortDestination);

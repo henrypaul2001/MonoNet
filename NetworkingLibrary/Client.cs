@@ -60,7 +60,7 @@ namespace NetworkingLibrary
 
             //connections = new List<Connection>();
 
-            networkManager.PacketManager.StartReceiving(ref socket, networkManager);
+            networkManager.PacketManager.StartReceiving(socket, networkManager);
         }
 
         public Client(string ip, int port, bool isHost, bool isServer, int id, NetworkManager networkManager)
@@ -137,7 +137,7 @@ namespace NetworkingLibrary
             IPsConnectionRequestSentTo.Add(ip);
             byte[] data = Encoding.ASCII.GetBytes($"0/{protocolID}/REQUEST/id={id}/isHost={isHost}/isServer={isServer}");
             Packet connectionPacket = new Packet(ip, this.ip, portDestination, data, PacketType.CONNECT);
-            networkManager.PacketManager.SendPacket(connectionPacket, ref socket);
+            networkManager.PacketManager.SendPacket(connectionPacket, socket);
             //networkManager.PacketManager.StartReceiving(ref socket, networkManager);
             return data;
         }
@@ -167,7 +167,7 @@ namespace NetworkingLibrary
 
             byte[] data = Encoding.ASCII.GetBytes(payload);
             Packet acceptPacket = new Packet(ip, this.ip, destinationPort, data, PacketType.ACCEPT);
-            networkManager.PacketManager.SendPacket(acceptPacket, ref socket);
+            networkManager.PacketManager.SendPacket(acceptPacket, socket);
             //networkManager.PacketManager.StartReceiving(ref socket, networkManager);
         }
 

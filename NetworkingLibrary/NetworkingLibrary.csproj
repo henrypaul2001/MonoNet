@@ -49,6 +49,7 @@
   <ItemGroup>
     <Compile Include="Client.cs" />
     <Compile Include="Connection.cs" />
+    <Compile Include="ISocket.cs" />
     <Compile Include="NetworkedVariable.cs" />
     <Compile Include="Networked_GameObject.cs" />
     <Compile Include="NetworkManager.cs" />

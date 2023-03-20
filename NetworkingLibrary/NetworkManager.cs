@@ -327,7 +327,7 @@ namespace NetworkingLibrary
                         // Send packet
                         LastPayloadSent = payload;
                         connections[j].PacketSent(packet);
-                        packetManager.SendPacket(packet, ref localClient.Socket);
+                        packetManager.SendPacket(packet, localClient.Socket);
                     }
                 }
             }
@@ -556,7 +556,7 @@ namespace NetworkingLibrary
             for (int i = 0; i < connections.Count; i++)
             {
                 packet = new Packet(connections[i].RemoteClient.IP, localClient.IP, connections[i].RemoteClient.Port, data, PacketType.DISCONNECT);
-                packetManager.SendPacket(packet, ref localClient.Socket);
+                packetManager.SendPacket(packet, localClient.Socket);
             }
         }
 
