@@ -23,7 +23,7 @@ namespace NetworkingLibrary
         int protocolID;
 
         //List<Connection> connections;
-        Socket socket;
+        SocketWrapper socket;
 
         NetworkManager networkManager;
 
@@ -43,7 +43,7 @@ namespace NetworkingLibrary
 
             if (isLocalClient)
             {
-                socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                socket = new SocketWrapper(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
                 // Socket will listen to packets from all IP addresses
                 socket.Bind(new IPEndPoint(IPAddress.Any, port));
@@ -79,7 +79,7 @@ namespace NetworkingLibrary
             //connections = new List<Connection>();
         }
 
-        public ref Socket Socket
+        internal ref SocketWrapper Socket
         {
             get { return ref socket; }
         }

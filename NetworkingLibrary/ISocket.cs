@@ -10,6 +10,7 @@ namespace NetworkingLibrary
 {
     internal interface ISocket
     {
+        Socket Socket { get; }
         void Close();
         void Shutdown(SocketShutdown how);
         int Send(byte[] buffer);
@@ -19,7 +20,5 @@ namespace NetworkingLibrary
         int EndReceiveFrom(IAsyncResult asyncResult, ref EndPoint endPoint);
         IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback callback, object state);
         int EndSend(IAsyncResult asyncResult);
-
-        IAsyncResult AsyncState { get; }
     }
 }

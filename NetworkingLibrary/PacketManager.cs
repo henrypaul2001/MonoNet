@@ -21,7 +21,7 @@ namespace NetworkingLibrary
             this.networkManager = networkManager;
         }
 
-        internal void StartReceiving(Socket socket, NetworkManager networkManager)
+        internal void StartReceiving(ISocket socket, NetworkManager networkManager)
         {
             byte[] buffer = new byte[1024];
 
@@ -39,7 +39,7 @@ namespace NetworkingLibrary
         {
             try
             {
-                Socket socket = (Socket)result.AsyncState;
+                ISocket socket = (ISocket)result.AsyncState;
 
                 // Create new endpoint that will represent the IP address of the sender
                 EndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
@@ -74,12 +74,12 @@ namespace NetworkingLibrary
             }
         }
 
-        internal void ReceivePacket(Socket socket)
+        internal void ReceivePacket(ISocket socket)
         {
             // Constructs a custom packet object based on the byte array it received and adds it to the packetqueue
         }
 
-        internal void SendPacket(Packet packet, Socket socket)
+        internal void SendPacket(Packet packet, ISocket socket)
         {
             // Send a packet to it's destination
             IPEndPoint destination = new IPEndPoint(IPAddress.Parse(packet.IPDestination), packet.PortDestination);
@@ -95,7 +95,7 @@ namespace NetworkingLibrary
         {
             try
             {
-                Socket socket = (Socket)result.AsyncState;
+                ISocket socket = (ISocket)result.AsyncState;
                 int bytesSent = socket.EndSend(result);
                 Debug.WriteLine("Sent {0} bytes to {1}", bytesSent, remoteEP.Address, "Packet I/O");
 
