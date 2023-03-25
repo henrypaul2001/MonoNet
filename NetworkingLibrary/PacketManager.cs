@@ -28,7 +28,7 @@ namespace NetworkingLibrary
             // Create new endpoint that will represent the IP address of the sender
             EndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
 
-            socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref remoteEP, result =>
+            socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, remoteEP, result =>
             {
                 // Pass extra parameters to callback
                 ReceiveCallback(result, buffer, networkManager);
@@ -53,24 +53,33 @@ namespace NetworkingLibrary
                 // Check if packet belongs to game by checking IP address against current connections, or checking if the protocol ID is a match
                 List<string> addresses = networkManager.GetConnectedAddresses();
                 string output = Encoding.ASCII.GetString(data);
-                string[] split = output.Split('/');
-                int protocolID = int.Parse(split[1]);
-
-                if (addresses.Contains(remoteIP.Address.ToString()))
+                if (output.Contains('/'))
                 {
-                    // Packet belongs to game
-                    ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
-                }
-                else if (protocolID == networkManager.ProtocolID)
-                {
-                    // Packet belongs to game
-                    ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
-                }
+                    string[] split = output.Split('/');
+                    int protocolID;
+                    bool intParse = int.TryParse(split[1], out protocolID);
+                    if (!intParse)
+                    {
+                        Debug.WriteLine("Could not parse protocol ID - packet ignored", "Packet I/O");
+                        return;
+                    }
 
-                StartReceiving(socket, networkManager);
+                    if (addresses.Contains(remoteIP.Address.ToString()))
+                    {
+                        // Packet belongs to game
+                        ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
+                    }
+                    else if (protocolID == networkManager.ProtocolID)
+                    {
+                        // Packet belongs to game
+                        ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
+                    }
+
+                    StartReceiving(socket, networkManager);
+                }
             } catch (Exception e)
             {
-                Debug.WriteLine(e);
+                Debug.WriteLine(e, "Packet I/O");
             }
         }
 

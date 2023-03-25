@@ -22,7 +22,7 @@ namespace NetworkingLibrary
             get { return socket; } 
         }
 
-        public virtual IAsyncResult BeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, ref EndPoint remoteEP, AsyncCallback callback, object state)
+        public virtual IAsyncResult BeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback callback, object state)
         {
             return Socket.BeginReceiveFrom(buffer, offset, size, socketFlags, ref remoteEP, callback, state);
         }
