@@ -12,6 +12,11 @@ namespace NetworkingLibrary
 {
     internal class PacketManager
     {
+        #region stuff for unit tests
+        internal int PacketsIgnored { get; set; } = 0;
+        internal int PacketsProcessed { get; set; } = 0;
+        #endregion
+
         List<Packet> packetQueue;
         NetworkManager networkManager;
 
@@ -61,6 +66,7 @@ namespace NetworkingLibrary
                     if (!intParse)
                     {
                         Debug.WriteLine("Could not parse protocol ID - packet ignored", "Packet I/O");
+                        PacketsIgnored++;
                         return;
                     }
 
@@ -68,11 +74,13 @@ namespace NetworkingLibrary
                     {
                         // Packet belongs to game
                         ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
+                        PacketsProcessed++;
                     }
                     else if (protocolID == networkManager.ProtocolID)
                     {
                         // Packet belongs to game
                         ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
+                        PacketsProcessed++;
                     }
 
                     StartReceiving(socket, networkManager);
@@ -80,6 +88,7 @@ namespace NetworkingLibrary
             } catch (Exception e)
             {
                 Debug.WriteLine(e, "Packet I/O");
+                PacketsIgnored++;
             }
         }
 
@@ -110,7 +119,7 @@ namespace NetworkingLibrary
 
             } catch (Exception e)
             {
-                Debug.WriteLine($"Error sending packet: {e}");
+                Debug.WriteLine($"Error sending packet: {e}", "Packet I/O");
             }
         }
 
