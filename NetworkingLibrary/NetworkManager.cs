@@ -62,7 +62,7 @@ namespace NetworkingLibrary
         public NetworkManager(ConnectionType connectionType, int protocolID, int port)
         {
             // Load testing assembly
-            TestAssembly = Assembly.Load("NetworkingLibraryTests4");
+            //TestAssembly = Assembly.Load("NetworkingLibraryTests4");
 
             PayloadsSent = new List<string>(3);
 

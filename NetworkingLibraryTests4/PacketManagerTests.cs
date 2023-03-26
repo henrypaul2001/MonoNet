@@ -52,7 +52,7 @@ namespace NetworkingLibrary.Tests
             {
                 Assert.Pass();
             }
-            else if (packetsIgnored < 0)
+            else if (packetsIgnored < 1)
             {
                 Assert.Fail("Rogue packet wasn't ignored");
             }
@@ -140,6 +140,34 @@ namespace NetworkingLibrary.Tests
             {
                 Assert.Fail("Too many packets were processed");
             }
+        }
+
+        [Test()]
+        public void SendPacketTest_IsBeginSendToCalled_OnSocket_WithCorrectParameters()
+        {
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+            var mockSocket = new Mock<SocketWrapper>(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+
+            string testString = "SendTestData";
+            byte[] testData = Encoding.ASCII.GetBytes(testString);
+
+            Packet packet = new Packet("125.125.2.2", manager.LocalClient.IP, 28500, testData, PacketType.CONNECT);
+
+            // Act
+            manager.PacketManager.SendPacket(packet, mockSocket.Object);
+            manager.Close();
+
+            // Assert
+            mockSocket.Verify(s => s.BeginSendTo(
+                packet.Data,
+                0,
+                packet.Data.Length,
+                It.IsAny<SocketFlags>(),
+                new IPEndPoint(IPAddress.Parse(packet.IPDestination), packet.PortDestination),
+                It.IsAny<AsyncCallback>(),
+                It.IsAny<object>()
+                ));
         }
     }
 }

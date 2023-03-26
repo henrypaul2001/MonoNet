@@ -15,14 +15,13 @@ namespace NetworkingLibrary
         #region stuff for unit tests
         internal int PacketsIgnored { get; set; } = 0;
         internal int PacketsProcessed { get; set; } = 0;
+        internal int LastPacketSentTotalBytes { get; set; } = 0;
         #endregion
 
-        List<Packet> packetQueue;
         NetworkManager networkManager;
 
         public PacketManager(NetworkManager networkManager)
         {
-            packetQueue = new List<Packet>();
             this.networkManager = networkManager;
         }
 
@@ -92,11 +91,6 @@ namespace NetworkingLibrary
             }
         }
 
-        internal void ReceivePacket(ISocket socket)
-        {
-            // Constructs a custom packet object based on the byte array it received and adds it to the packetqueue
-        }
-
         internal void SendPacket(Packet packet, ISocket socket)
         {
             // Send a packet to it's destination
@@ -115,7 +109,8 @@ namespace NetworkingLibrary
             {
                 ISocket socket = (ISocket)result.AsyncState;
                 int bytesSent = socket.EndSend(result);
-                Debug.WriteLine("Sent {0} bytes to {1}", bytesSent, remoteEP.Address, "Packet I/O");
+                Debug.WriteLine($"Sent {bytesSent} bytes to {remoteEP.Address}", "Packet I/O");
+                LastPacketSentTotalBytes = bytesSent;
 
             } catch (Exception e)
             {
