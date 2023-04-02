@@ -207,11 +207,135 @@ namespace NetworkingLibrary.Tests
             // Assert
             if (lastPacketConstructed.PacketType != PacketType.REQUEST)
             {
-                Assert.Fail("Request packet wasn't constructd");
+                Assert.Fail("Request packet wasn't constructed");
             }
             else
             {
                 Assert.AreEqual(1, handleConnectRequestCalls);
+            }
+        }
+
+        [Test()]
+        public void ConstructPacketFromByteArrayTest_CorrectFormatAcceptPacket_IsConnectionAcceptCalled_And_IsCorrectPacketConstructed()
+        {
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+
+            string testString = $"0/25/ACCEPT/{manager.LocalClient.ID}/{manager.LocalClient.IsHost}/{manager.LocalClient.IsServer}/0";
+            byte[] testData = Encoding.ASCII.GetBytes(testString);
+
+            // Act
+            manager.PacketManager.ConstructAndProcessPacketFromByteArray(testData, "123.123.5.5", 28000);
+            int handleConnectionAcceptCalls = manager.HandleConnectionAcceptCalls;
+            Packet lastPacketConstructed = manager.PacketManager.LastPacketConstructed;
+            manager.Close();
+
+            // Assert
+            if (lastPacketConstructed.PacketType != PacketType.ACCEPT)
+            {
+                Assert.Fail("Accept packet wasn't constructed");
+            }
+            else
+            {
+                Assert.AreEqual(1, handleConnectionAcceptCalls);
+            }
+        }
+
+        [Test()]
+        public void ConstructPacketFromByteArrayTest_CorrectFormatSyncPacket_IsProcessSyncCalled_And_IsCorrectPacketConstructed()
+        {
+            // Arrange
+            string destinationIP = "150.150.7.7";
+            int destinationPort = 28000;
+            int clientID = 567;
+
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+
+            Client fakeRemoteClient = new Client(destinationIP, destinationPort, false, false, clientID, manager);
+            manager.RemoteClientsInternal.Add(fakeRemoteClient);
+            Connection fakeConnection = new Connection(manager.LocalClient, fakeRemoteClient, 5);
+            manager.ConnectionsInternal.Add(fakeConnection);
+
+            string testString = $"id={manager.LocalClient.ID}/objID=100/VARSTART/VAREND";
+            Packet testPacket = manager.CreateSyncOrConstructPacket(PacketType.SYNC, testString, fakeConnection);
+            byte[] testData = testPacket.Data;
+
+            // Act
+            manager.PacketManager.ConstructAndProcessPacketFromByteArray(testData, "123.123.5.5", 28000);
+            int processSyncCalls = manager.ProcessSyncPacketCalls;
+            Packet lastPacketConstructed = manager.PacketManager.LastPacketConstructed;
+            manager.Close();
+
+            // Assert
+            if (lastPacketConstructed.PacketType != PacketType.SYNC)
+            {
+                Assert.Fail("Sync packet wasn't constructed");
+            }
+            else
+            {
+                Assert.AreEqual(1, processSyncCalls);
+            }
+        }
+
+        [Test()]
+        public void ConstructPacketFromByteArrayTest_CorrectFormatConstructPacket_IsProcessConstructCalled_And_IsCorrectPacketConstructed()
+        {
+            // Arrange
+            string destinationIP = "150.150.7.7";
+            int destinationPort = 28000;
+            int clientID = 567;
+
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+
+            Client fakeRemoteClient = new Client(destinationIP, destinationPort, false, false, clientID, manager);
+            manager.RemoteClientsInternal.Add(fakeRemoteClient);
+            Connection fakeConnection = new Connection(manager.LocalClient, fakeRemoteClient, 5);
+            manager.ConnectionsInternal.Add(fakeConnection);
+
+            string testString = $"id={manager.LocalClient.ID}/objID=100/NetworkingLibrary.Tests.TestNetworkedObject/PROPSTART/PROPEND/";
+            Packet testPacket = manager.CreateSyncOrConstructPacket(PacketType.CONSTRUCT, testString, fakeConnection);
+            byte[] testData = testPacket.Data;
+
+            // Act
+            manager.PacketManager.ConstructAndProcessPacketFromByteArray(testData, "123.123.5.5", 28000);
+            int processConstructCalls = manager.ProcessConstructPacketCalls;
+            Packet lastPacketConstructed = manager.PacketManager.LastPacketConstructed;
+            manager.Close();
+
+            // Assert
+            if (lastPacketConstructed.PacketType != PacketType.CONSTRUCT)
+            {
+                Assert.Fail("Construct packet wasn't constructed");
+            }
+            else
+            {
+                Assert.AreEqual(1, processConstructCalls);
+            }
+        }
+
+        [Test()]
+        public void ConstructPacketFromByteArrayTest_CorrectFormatDisconnectPacket_IsProcessDisconnectCalled_And_IsCorrectPacketConstructed()
+        {
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+
+            string testString = $"0/25/DISCONNECT/123";
+            byte[] testData = Encoding.ASCII.GetBytes(testString);
+
+            // Act
+            manager.PacketManager.ConstructAndProcessPacketFromByteArray(testData, "123.123.5.5", 28000);
+            int processDisconnectCalls = manager.ProcessDisconnectPacketCalls;
+            Packet lastPacketConstructed = manager.PacketManager.LastPacketConstructed;
+            manager.Close();
+
+            // Assert
+            if (lastPacketConstructed.PacketType != PacketType.DISCONNECT)
+            {
+                Assert.Fail("Disconnect packet wasn't constructed");
+            }
+            else
+            {
+                Assert.AreEqual(1, processDisconnectCalls);
             }
         }
     }

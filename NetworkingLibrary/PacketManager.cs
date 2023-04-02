@@ -167,7 +167,7 @@ namespace NetworkingLibrary
                         // Synchronisation packet
 
                         // Create sync packet and pass to network manager
-                        packet = CreateConstructOrSyncPacket(PacketType.SYNC, data, sourceIP, sourcePort);
+                        packet = CreateConstructOrSyncPacketFromByteArray(PacketType.SYNC, data, sourceIP, sourcePort);
                         networkManager.ProcessSyncPacket(packet);
                         completionStatus = "SUCCESS";
                         LastPacketConstructed = packet;
@@ -176,7 +176,7 @@ namespace NetworkingLibrary
                         // Object construction packet (a new local object has been created on a remote client, therefore all clients in session must now create a matching object locally)
 
                         // Create construct packet and pass to network manager
-                        packet = CreateConstructOrSyncPacket(PacketType.CONSTRUCT, data, sourceIP, sourcePort);
+                        packet = CreateConstructOrSyncPacketFromByteArray(PacketType.CONSTRUCT, data, sourceIP, sourcePort);
                         networkManager.ProcessConstructPacket(packet);
                         completionStatus = "SUCCESS";
                         LastPacketConstructed = packet;
@@ -200,7 +200,7 @@ namespace NetworkingLibrary
             return completionStatus;
         }
 
-        internal Packet CreateConstructOrSyncPacket(PacketType packetType, byte[] data, string sourceIP, int sourcePort)
+        internal Packet CreateConstructOrSyncPacketFromByteArray(PacketType packetType, byte[] data, string sourceIP, int sourcePort)
         {
             string payload = Encoding.ASCII.GetString(data, 0, data.Length);
 

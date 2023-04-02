@@ -310,26 +310,7 @@ namespace NetworkingLibrary
                 {
                     if (destinationPort == connections[j].RemoteClient.Port || destinationIP == "ALL")
                     {
-                        // Construct packet
-                        int localSequence = connections[j].LocalSequence;
-                        int remoteSequence = connections[j].RemoteSequence;
-                        AckBitfield ackBitfield = connections[j].GenerateAckBitfield();
-
-                        string packetData = $"/{protocolID}/{packetType}/{localSequence}/{remoteSequence}/" + payload;
-
-                        byte[] ackBytes = BitConverter.GetBytes((uint)ackBitfield);
-                        byte[] data = Encoding.ASCII.GetBytes(packetData);
-
-                        // Get the length of the data byte array as a byte array
-                        byte[] lengthBytes = BitConverter.GetBytes(data.Length);
-
-                        // Combine byte arrays into one byte array
-                        byte[] dataWithAckAndLength = new byte[lengthBytes.Length + ackBytes.Length + data.Length];
-                        Array.Copy(lengthBytes, 0, dataWithAckAndLength, 0, lengthBytes.Length);
-                        Array.Copy(data, 0, dataWithAckAndLength, lengthBytes.Length, data.Length);
-                        Array.Copy(ackBytes, 0, dataWithAckAndLength, data.Length + lengthBytes.Length, ackBytes.Length);
-
-                        packet = new Packet(packetType, localSequence, remoteSequence, ackBitfield, dataWithAckAndLength, connections[j].RemoteClient.IP, connections[j].RemoteClient.Port);
+                        packet = CreateSyncOrConstructPacket(packetType, payload, connections[j]);
 
                         // Send packet
                         LastPayloadSent = payload;
@@ -338,6 +319,32 @@ namespace NetworkingLibrary
                     }
                 }
             }
+        }
+
+        internal Packet CreateSyncOrConstructPacket(PacketType packetType, string payload, Connection connection)
+        {
+            // Construct packet
+            int localSequence = connection.LocalSequence;
+            int remoteSequence = connection.RemoteSequence;
+            AckBitfield ackBitfield = connection.GenerateAckBitfield();
+
+            string packetData = $"/{protocolID}/{packetType}/{localSequence}/{remoteSequence}/" + payload;
+
+            byte[] ackBytes = BitConverter.GetBytes((uint)ackBitfield);
+            byte[] data = Encoding.ASCII.GetBytes(packetData);
+
+            // Get the length of the data byte array as a byte array
+            byte[] lengthBytes = BitConverter.GetBytes(data.Length);
+
+            // Combine byte arrays into one byte array
+            byte[] dataWithAckAndLength = new byte[lengthBytes.Length + ackBytes.Length + data.Length];
+            Array.Copy(lengthBytes, 0, dataWithAckAndLength, 0, lengthBytes.Length);
+            Array.Copy(data, 0, dataWithAckAndLength, lengthBytes.Length, data.Length);
+            Array.Copy(ackBytes, 0, dataWithAckAndLength, data.Length + lengthBytes.Length, ackBytes.Length);
+
+            Packet packet = new Packet(packetType, localSequence, remoteSequence, ackBitfield, dataWithAckAndLength, connection.RemoteClient.IP, connection.RemoteClient.Port);
+
+            return packet;
         }
 
         public abstract void ConstructRemoteObject(int clientID, int objectID, Type objectType, Dictionary<string, string> properties);
