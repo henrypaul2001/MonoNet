@@ -33,6 +33,13 @@ namespace NetworkingLibrary
         internal Assembly TestAssembly {get; set;}
         internal List<string> PayloadsSent { get; set; }
         internal int DisconnectLocalClientCalls { get; set; }
+
+
+        internal int HandleConnctionRequestCalls { get; set; } = 0;
+        internal int HandleConnectionAcceptCalls { get; set; } = 0;
+        internal int ProcessSyncPacketCalls { get; set; } = 0;
+        internal int ProcessConstructPacketCalls { get; set; } = 0;
+        internal int ProcessDisconnectPacketCalls { get; set; } = 0;
         #endregion
 
         // List representing networked game objects that need to be synced
@@ -337,6 +344,7 @@ namespace NetworkingLibrary
 
         internal void ProcessConstructPacket(Packet constructPacket)
         {
+            ProcessConstructPacketCalls++;
             string data = Encoding.ASCII.GetString(constructPacket.Data);
             string[] split = data.Split('/');
 
@@ -460,6 +468,7 @@ namespace NetworkingLibrary
 
         internal void ProcessSyncPacket(Packet syncPacket)
         {
+            ProcessSyncPacketCalls++;
             string data = Encoding.ASCII.GetString(syncPacket.Data);
             string[] split = data.Split('/');
 
@@ -567,6 +576,7 @@ namespace NetworkingLibrary
 
         internal void ProcessDisconnectPacket(Packet disconnectPacket)
         {
+            ProcessDisconnectPacketCalls++;
             // Find the client that disconnected
             string data = Encoding.ASCII.GetString(disconnectPacket.Data);
             string[] split = data.Split('/');
@@ -610,6 +620,7 @@ namespace NetworkingLibrary
 
         public virtual void HandleConnectionRequest(Packet connectionPacket)
         {
+            HandleConnctionRequestCalls++;
             string data = Encoding.ASCII.GetString(connectionPacket.Data);
             string[] split = data.Split('/');
 
@@ -647,6 +658,7 @@ namespace NetworkingLibrary
 
         public virtual void HandleConnectionAccept(Packet acceptPacket)
         {
+            HandleConnectionAcceptCalls++;
             string data = Encoding.ASCII.GetString(acceptPacket.Data);
             string[] split = data.Split('/');
 

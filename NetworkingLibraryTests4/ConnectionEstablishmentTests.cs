@@ -37,7 +37,7 @@ namespace NetworkingLibrary.Tests
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
             byte[] data = Encoding.ASCII.GetBytes("0/25/REQUEST/id=123/isHost=false/isServer=false");
-            Packet request = new Packet(PacketType.CONNECT, "123.123.1.2", 27000, data);
+            Packet request = new Packet(PacketType.REQUEST, "123.123.1.2", 27000, data);
 
             // Act
             manager.HandleConnectionRequest(request);

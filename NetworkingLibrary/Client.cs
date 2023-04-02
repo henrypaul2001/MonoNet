@@ -136,7 +136,7 @@ namespace NetworkingLibrary
             requestConnectionCalls++;
             IPsConnectionRequestSentTo.Add(ip);
             byte[] data = Encoding.ASCII.GetBytes($"0/{protocolID}/REQUEST/id={id}/isHost={isHost}/isServer={isServer}");
-            Packet connectionPacket = new Packet(ip, this.ip, portDestination, data, PacketType.CONNECT);
+            Packet connectionPacket = new Packet(ip, this.ip, portDestination, data, PacketType.REQUEST);
             networkManager.PacketManager.SendPacket(connectionPacket, socket);
             //networkManager.PacketManager.StartReceiving(ref socket, networkManager);
             return data;

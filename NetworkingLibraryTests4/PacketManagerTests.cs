@@ -93,7 +93,7 @@ namespace NetworkingLibrary.Tests
             // Act
             manager.PacketManager.StartReceiving(mockSocket.Object, manager);
 
-            testString = "0/25/belongstogame";
+            testString = $"0/25/REQUEST/{manager.LocalClient.ID}/{manager.LocalClient.IsHost}/{manager.LocalClient.IsServer}";
 
             // Setup mock
             testBuffer = new byte[1024];
@@ -152,7 +152,7 @@ namespace NetworkingLibrary.Tests
             string testString = "SendTestData";
             byte[] testData = Encoding.ASCII.GetBytes(testString);
 
-            Packet packet = new Packet("125.125.2.2", manager.LocalClient.IP, 28500, testData, PacketType.CONNECT);
+            Packet packet = new Packet("125.125.2.2", manager.LocalClient.IP, 28500, testData, PacketType.REQUEST);
 
             // Act
             manager.PacketManager.SendPacket(packet, mockSocket.Object);
@@ -168,6 +168,51 @@ namespace NetworkingLibrary.Tests
                 It.IsAny<AsyncCallback>(),
                 It.IsAny<object>()
                 ));
+        }
+
+        [Test()]
+        public void ConstructPacketFromByteArrayTest_ByteArrayDoesntContainCorrectSplitCharacter()
+        {
+            // Arrange
+
+            // Byte array doesn't contain ('/') character which is used to seperate the data inside the packet
+            string testString = "iamsillybecauseidontcontainanyseperationcharactersawjeezohnoohdear";
+            byte[] testData = Encoding.ASCII.GetBytes(testString);
+
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+
+            // Act
+            string status = manager.PacketManager.ConstructAndProcessPacketFromByteArray(testData, "123.123.5.5", 28000);
+            manager.Close();
+
+            // Assert
+            Assert.AreEqual(status, "FAIL - DATA DOES NOT CONTAIN SEPERATION CHARACTER");
+        }
+
+        [Test()]
+        public void ConstructPacketFromByteArrayTest_CorrectFormatRequestPacket_IsConnectionRequestCalled_And_IsCorrectPacketConstructed()
+        {
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+
+            string testString = $"0/25/REQUEST/{manager.LocalClient.ID}/{manager.LocalClient.IsHost}/{manager.LocalClient.IsServer}";
+            byte[] testData = Encoding.ASCII.GetBytes(testString);
+
+            // Act
+            manager.PacketManager.ConstructAndProcessPacketFromByteArray(testData, "123.123.5.5", 28000);
+            int handleConnectRequestCalls = manager.HandleConnctionRequestCalls;
+            Packet lastPacketConstructed = manager.PacketManager.LastPacketConstructed;
+            manager.Close();
+
+            // Assert
+            if (lastPacketConstructed.PacketType != PacketType.REQUEST)
+            {
+                Assert.Fail("Request packet wasn't constructd");
+            }
+            else
+            {
+                Assert.AreEqual(1, handleConnectRequestCalls);
+            }
         }
     }
 }

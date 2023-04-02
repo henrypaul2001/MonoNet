@@ -46,7 +46,7 @@ namespace NetworkingLibrary
     public enum PacketType
     {
         SYNC,
-        CONNECT,
+        REQUEST,
         DISCONNECT,
         ACCEPT,
         CONSTRUCT,

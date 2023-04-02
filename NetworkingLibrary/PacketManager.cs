@@ -16,6 +16,7 @@ namespace NetworkingLibrary
         internal int PacketsIgnored { get; set; } = 0;
         internal int PacketsProcessed { get; set; } = 0;
         internal int LastPacketSentTotalBytes { get; set; } = 0;
+        internal Packet LastPacketConstructed { get; set; }
         #endregion
 
         NetworkManager networkManager;
@@ -72,14 +73,28 @@ namespace NetworkingLibrary
                     if (addresses.Contains(remoteIP.Address.ToString()))
                     {
                         // Packet belongs to game
-                        ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
-                        PacketsProcessed++;
+                        string status = ConstructAndProcessPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
+                        if (status == "SUCCESS")
+                        {
+                            PacketsProcessed++;
+                        }
+                        else
+                        {
+                            Debug.WriteLine("Error constructing/processing packet from byte array", "Packet I/O");
+                        }
                     }
                     else if (protocolID == networkManager.ProtocolID)
                     {
                         // Packet belongs to game
-                        ConstructPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
-                        PacketsProcessed++;
+                        string status = ConstructAndProcessPacketFromByteArray(data, remoteIP.Address.ToString(), remoteIP.Port);
+                        if (status == "SUCCESS")
+                        {
+                            PacketsProcessed++;
+                        }
+                        else
+                        {
+                            Debug.WriteLine("Error constructing/processing packet from byte array", "Packet I/O");
+                        }
                     }
 
                     StartReceiving(socket, networkManager);
@@ -118,51 +133,71 @@ namespace NetworkingLibrary
             }
         }
 
-        private void ConstructPacketFromByteArray(byte[] data, string sourceIP, int sourcePort)
+        internal string ConstructAndProcessPacketFromByteArray(byte[] data, string sourceIP, int sourcePort)
         {
+            string completionStatus = "FAIL";
             string payload = Encoding.ASCII.GetString(data, 0, data.Length);
 
-            string[] split = payload.Split('/');
-
-            Packet packet;
-            switch (split[2])
+            if (payload.Contains('/'))
             {
-                case "REQUEST":
-                    // Connection packet
+                string[] split = payload.Split('/');
 
-                    // Begin establishing connection
-                    packet = new Packet(PacketType.CONNECT, sourceIP, sourcePort, data);
-                    networkManager.HandleConnectionRequest(packet);
-                    break;
-                case "ACCEPT":
-                    // Connection accept packet
+                Packet packet;
+                switch (split[2])
+                {
+                    case "REQUEST":
+                        // Connection packet
 
-                    // Create accept packet and pass to network manager
-                    packet = new Packet(PacketType.ACCEPT, sourceIP, sourcePort, data);
-                    networkManager.HandleConnectionAccept(packet);
-                    break;
-                case "SYNC":
-                    // Synchronisation packet
+                        // Begin establishing connection
+                        packet = new Packet(PacketType.REQUEST, sourceIP, sourcePort, data);
+                        networkManager.HandleConnectionRequest(packet);
+                        completionStatus = "SUCCESS";
+                        LastPacketConstructed = packet;
+                        break;
+                    case "ACCEPT":
+                        // Connection accept packet
 
-                    // Create sync packet and pass to network manager
-                    packet = CreateConstructOrSyncPacket(PacketType.SYNC, data, sourceIP, sourcePort);
-                    networkManager.ProcessSyncPacket(packet);
-                    break;
-                case "CONSTRUCT":
-                    // Object construction packet (a new local object has been created on a remote client, therefore all clients in session must now create a matching object locally)
+                        // Create accept packet and pass to network manager
+                        packet = new Packet(PacketType.ACCEPT, sourceIP, sourcePort, data);
+                        networkManager.HandleConnectionAccept(packet);
+                        completionStatus = "SUCCESS";
+                        LastPacketConstructed = packet;
+                        break;
+                    case "SYNC":
+                        // Synchronisation packet
 
-                    // Create construct packet and pass to network manager
-                    packet = CreateConstructOrSyncPacket(PacketType.CONSTRUCT, data, sourceIP, sourcePort);
-                    networkManager.ProcessConstructPacket(packet);
-                    break;
-                case "DISCONNECT":
-                    // Disconnect packet
+                        // Create sync packet and pass to network manager
+                        packet = CreateConstructOrSyncPacket(PacketType.SYNC, data, sourceIP, sourcePort);
+                        networkManager.ProcessSyncPacket(packet);
+                        completionStatus = "SUCCESS";
+                        LastPacketConstructed = packet;
+                        break;
+                    case "CONSTRUCT":
+                        // Object construction packet (a new local object has been created on a remote client, therefore all clients in session must now create a matching object locally)
 
-                    // Create disconnect packet and pass to network manager
-                    packet = new Packet(PacketType.DISCONNECT, sourceIP, sourcePort, data);
-                    networkManager.ProcessDisconnectPacket(packet);
-                    break;
+                        // Create construct packet and pass to network manager
+                        packet = CreateConstructOrSyncPacket(PacketType.CONSTRUCT, data, sourceIP, sourcePort);
+                        networkManager.ProcessConstructPacket(packet);
+                        completionStatus = "SUCCESS";
+                        LastPacketConstructed = packet;
+                        break;
+                    case "DISCONNECT":
+                        // Disconnect packet
+
+                        // Create disconnect packet and pass to network manager
+                        packet = new Packet(PacketType.DISCONNECT, sourceIP, sourcePort, data);
+                        networkManager.ProcessDisconnectPacket(packet);
+                        completionStatus = "SUCCESS";
+                        LastPacketConstructed = packet;
+                        break;
+                }
             }
+            else
+            {
+                completionStatus = "FAIL - DATA DOES NOT CONTAIN SEPERATION CHARACTER";
+            }
+
+            return completionStatus;
         }
 
         internal Packet CreateConstructOrSyncPacket(PacketType packetType, byte[] data, string sourceIP, int sourcePort)
@@ -197,7 +232,10 @@ namespace NetworkingLibrary
             // Create ackbitfield from ack byte array
             AckBitfield ackBitfield = (AckBitfield)BitConverter.ToUInt32(ackBytes, 0);
 
-            return new Packet(packetType, localSequence, remoteSequence, ackBitfield, sourceIP, sourcePort, extractedData);
+            Packet packet = new Packet(packetType, localSequence, remoteSequence, ackBitfield, sourceIP, sourcePort, extractedData);
+
+            LastPacketConstructed = packet;
+            return packet;
         }
     }
 }
