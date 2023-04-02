@@ -10,11 +10,17 @@ namespace NetworkingLibrary
 {
     public class Connection
     {
+        #region stuff for unit tests
+        internal int InternalRemoteSequence { set { remoteSequence = value; } }
+        #endregion
+
         public struct Diagnostics
         {
-            int packetLoss;
-            float RTT;
-            float latency;
+            internal int PacketsReceived;
+            internal int PacketsSent;
+            internal int PacketsLost;
+            internal float RTT;
+            internal float Latency;
         }
 
         float packetTimeoutTime;
@@ -87,7 +93,7 @@ namespace NetworkingLibrary
             get { return remoteClientID; }
         }
 
-        public void AddToBuffer(int number)
+        internal void AddToBuffer(int number)
         {
             buffer[(bufferStart + bufferCount) % buffer.Length] = number;
             if (bufferCount < buffer.Length)
@@ -100,11 +106,11 @@ namespace NetworkingLibrary
             }
         }
 
-        public bool BufferContains(int number)
+        internal bool BufferContains(int number)
         {
             for (int i = 0; i < bufferCount; i++)
             {
-                if (buffer[(bufferStart + 1) % buffer.Length] == number)
+                if (buffer[(bufferStart + i) % buffer.Length] == number)
                 {
                     return true;
                 }
@@ -112,13 +118,13 @@ namespace NetworkingLibrary
             return false;
         }
 
-        public AckBitfield GenerateAckBitfield()
+        internal AckBitfield GenerateAckBitfield()
         {
             AckBitfield ackBitfield = new AckBitfield();
 
             for (int i = 0; i < 33; i++)
             {
-                if (BufferContains(remoteSequence - i))
+                if (BufferContains(RemoteSequence - i))
                 {
                     ackBitfield |= (AckBitfield)(1 << i);
                 }
@@ -127,7 +133,7 @@ namespace NetworkingLibrary
             return ackBitfield;
         }
 
-        public void CheckForLostPackets()
+        internal void CheckForLostPackets()
         {
             foreach (KeyValuePair<int, Packet> pair in packetsWaitingForAck)
             {
@@ -138,25 +144,29 @@ namespace NetworkingLibrary
                     Debug.WriteLine($"Packet lost: sequence number={pair.Value.Sequence} time sent={pair.Value.SendTime}", "Packet Loss");
                     packetsWaitingForAck.Remove(pair.Key);
                     lostPackets.Add(pair.Value);
+                    diagnostics.PacketsLost++;
                 }
             }
         }
 
-        public void PacketSent(Packet packet)
+        internal void PacketSent(Packet packet)
         {
             if (packet.PacketType == PacketType.CONSTRUCT || packet.PacketType == PacketType.SYNC)
             {
+                diagnostics.PacketsSent++;
                 localSequence++;
                 packetsWaitingForAck.Add(packet.Sequence, packet);
             }
         }
 
-        public void PacketReceived(Packet packet)
+        internal void PacketReceived(Packet packet)
         {
             if (packet.PacketType == PacketType.CONSTRUCT || packet.PacketType == PacketType.SYNC)
             {
+                diagnostics.PacketsReceived++;
+
                 AddToBuffer(packet.Sequence);
-                if (remoteSequence < packet.Sequence)
+                if (RemoteSequence < packet.Sequence)
                 {
                     // Packet is newer
                     remoteSequence = packet.Sequence;

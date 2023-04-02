@@ -74,6 +74,7 @@
     <Compile Include="ConnectionEstablishmentTests.cs" />
     <Compile Include="NetworkManagerTests.cs" />
     <Compile Include="PacketManagerTests.cs" />
+    <Compile Include="ConnectionTests.cs" />
     <Compile Include="PacketProcessingTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestNetworkedObjectStresser.cs" />
