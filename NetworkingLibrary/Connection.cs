@@ -13,6 +13,7 @@ namespace NetworkingLibrary
         #region stuff for unit tests
         internal int InternalRemoteSequence { set { remoteSequence = value; } }
         internal Dictionary<int, Packet> InternalPacketsWaitingForAck { get { return packetsWaitingForAck; } set { packetsWaitingForAck = value; } }
+        internal List<Packet> InternalLostPackets { get { return lostPackets; } }
         #endregion
 
         public struct Diagnostics
@@ -136,17 +137,24 @@ namespace NetworkingLibrary
 
         internal void CheckForLostPackets()
         {
+            List<int> keysToRemove = new List<int>();
             foreach (KeyValuePair<int, Packet> pair in packetsWaitingForAck)
             {
                 TimeSpan elapsedTime = DateTime.Now.Subtract(pair.Value.SendTime);
-                if (elapsedTime.TotalMilliseconds >= packetTimeoutTime)
+                if (elapsedTime.TotalMilliseconds >= (packetTimeoutTime * 1000))
                 {
                     // Packet is lost
                     Debug.WriteLine($"Packet lost: sequence number={pair.Value.Sequence} time sent={pair.Value.SendTime}", "Packet Loss");
-                    packetsWaitingForAck.Remove(pair.Key);
+                    keysToRemove.Add(pair.Key);
                     lostPackets.Add(pair.Value);
                     diagnostics.PacketsLost++;
                 }
+            }
+
+            // Remove lost packets from waiting list
+            for (int i = 0; i < keysToRemove.Count; i++)
+            {
+                packetsWaitingForAck.Remove(keysToRemove[i]);
             }
         }
 
@@ -180,7 +188,7 @@ namespace NetworkingLibrary
 
         internal void ProcessAckBitfield(int ack, AckBitfield bitfield)
         {
-            for (int i = 0; i <= 32; i++)
+            for (int i = 0; i < 33; i++)
             {
                 AckBitfield bit = (AckBitfield)(1 << i);
                 if ((bitfield & bit) == bit)

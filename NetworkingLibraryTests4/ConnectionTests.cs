@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Reflection;
 using Moq;
+using System.Threading;
 
 namespace NetworkingLibrary.Tests
 {
@@ -137,6 +138,82 @@ namespace NetworkingLibrary.Tests
 
             // Assert
             Assert.AreEqual(expected, actual);
+        }
+
+        [Test()]
+        public void CheckForLostPacketsTest_Wait6Seconds_AreLostPackets_RemovedFrom_WaitingList_And_AddedToLostList()
+        {
+            // Arrange
+            int packetTimeoutTime = 5; // in seconds
+
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+            Client remoteClient = new Client("123.123.2.2", 28000, false, false, 123, manager);
+            Connection testConnection = new Connection(manager.LocalClient, remoteClient, packetTimeoutTime);
+
+            for (int i = 0; i < 10; i++)
+            {
+                Packet packetToSend = new Packet(PacketType.SYNC, i, 0, AckBitfield.Ack1, Encoding.ASCII.GetBytes("test"), remoteClient.IP, remoteClient.Port);
+                testConnection.PacketSent(packetToSend);
+            }
+
+            // Act
+            Thread.Sleep((packetTimeoutTime + 1) * 1000); // sleep for timeout time
+            testConnection.CheckForLostPackets();
+            Dictionary<int, Packet> waitingList = testConnection.InternalPacketsWaitingForAck;
+            List<Packet> lostPackets = testConnection.InternalLostPackets;
+            manager.Close();
+
+            // Assert
+            if (waitingList.Count != 0)
+            {
+                Assert.Fail("Lost packets haven't been removed from waiting for ack dictionary");
+            }
+            else if (lostPackets.Count != 10)
+            {
+                Assert.Fail("Lost packets haven't been added to lost packets list");
+            }
+            else
+            {
+                Assert.Pass();
+            }
+        }
+
+        [Test()]
+        public void CheckForLostPacketsTest_Wait3Seconds_NoPacketsLost()
+        {
+            // Arrange
+            int packetTimeoutTime = 5; // in seconds
+
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+            Client remoteClient = new Client("123.123.2.2", 28000, false, false, 123, manager);
+            Connection testConnection = new Connection(manager.LocalClient, remoteClient, packetTimeoutTime);
+
+            for (int i = 0; i < 10; i++)
+            {
+                Packet packetToSend = new Packet(PacketType.SYNC, i, 0, AckBitfield.Ack1, Encoding.ASCII.GetBytes("test"), remoteClient.IP, remoteClient.Port);
+                testConnection.PacketSent(packetToSend);
+            }
+
+            // Act
+            Thread.Sleep((packetTimeoutTime - 2) * 1000); // sleep for timeout time - 2 seconds
+            testConnection.CheckForLostPackets();
+            Dictionary<int, Packet> waitingList = testConnection.InternalPacketsWaitingForAck;
+            List<Packet> lostPackets = testConnection.InternalLostPackets;
+            manager.Close();
+
+            // Assert
+            if (waitingList.Count != 10)
+            {
+                Assert.Fail($"Waiting for ack dictionary doesn't have required number of packets: Expected 10, Actual {waitingList.Count}");
+            }
+            else if (lostPackets.Count != 0)
+            {
+                Assert.Fail($"Lost packets list doesn't have required number of packets: Expected 0, Actual {lostPackets.Count}");
+            }
+            else
+            {
+                Assert.Pass();
+            }
         }
     }
 }

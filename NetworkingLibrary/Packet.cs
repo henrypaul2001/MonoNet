@@ -90,7 +90,7 @@ namespace NetworkingLibrary
             this.ipSource = ipSource;
             this.portSource = portSource;
 
-            sendTime = DateTime.Now;
+            //sendTime = DateTime.Now;
 
             CompressData();
         }
