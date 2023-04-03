@@ -86,5 +86,57 @@ namespace NetworkingLibrary.Tests
             // Assert
             Assert.AreEqual(expected, actual);
         }
+
+        [Test()]
+        public void ProcessAckBitfieldTest_AreAcknowledgedPackets_RemovedFrom_WaitingForAckDictionary()
+        {
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+            Client remoteClient = new Client("123.123.2.2", 28000, false, false, 123, manager);
+            Connection testConnection = new Connection(manager.LocalClient, remoteClient, 5);
+
+            // Create packets and pass to test connection to simulate the sending of packets
+            List<int> sequencesToAcknowledge = new List<int>() { 0, 1, 2, 3, 4, 5, 10, 11, 12, 13, 14, 20, 21 };
+            Dictionary<int, Packet> expected = new Dictionary<int, Packet>();
+            for (int i = 0; i < 33; i++)
+            {
+                string payload;
+                if (sequencesToAcknowledge.Contains(i))
+                {
+                    payload = "acknowledge me";
+                }
+                else
+                {
+                    payload = "dont acknowledge me";
+                }
+
+                Packet packetToSend = new Packet(PacketType.SYNC, i, 0, AckBitfield.Ack1, Encoding.ASCII.GetBytes(payload), remoteClient.IP, remoteClient.Port);
+                testConnection.PacketSent(packetToSend);
+
+                // If packet isn't being acknowledged in this test, add it to the expected waiting for ack dictionary
+                if (!sequencesToAcknowledge.Contains(i))
+                {
+                    expected.Add(i, packetToSend);
+                }
+            }
+
+            // Create ackbitfield based on sequences that are to be acknowledged by this test
+            AckBitfield testBitfield = new AckBitfield();
+            for (int i = 0; i < 33; i++)
+            {
+                if (sequencesToAcknowledge.Contains(sequencesToAcknowledge.Last() - i))
+                {
+                    testBitfield |= (AckBitfield)(1 << i);
+                }
+            }
+
+            // Act
+            testConnection.ProcessAckBitfield(sequencesToAcknowledge.Last(), testBitfield);
+            Dictionary<int, Packet> actual = testConnection.InternalPacketsWaitingForAck;
+            manager.Close();
+
+            // Assert
+            Assert.AreEqual(expected, actual);
+        }
     }
 }

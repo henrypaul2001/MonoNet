@@ -12,6 +12,7 @@ namespace NetworkingLibrary
     {
         #region stuff for unit tests
         internal int InternalRemoteSequence { set { remoteSequence = value; } }
+        internal Dictionary<int, Packet> InternalPacketsWaitingForAck { get { return packetsWaitingForAck; } set { packetsWaitingForAck = value; } }
         #endregion
 
         public struct Diagnostics
@@ -172,18 +173,21 @@ namespace NetworkingLibrary
                     remoteSequence = packet.Sequence;
                 }
 
-                // Scan ack bitfield
-                int ack = packet.Ack;
-                AckBitfield ackBitfield = packet.AckBitfield;
-                for (int i = 0; i < 32; i++)
+                // Scan ack bitfield and update packets waiting for ack list
+                ProcessAckBitfield(packet.Ack, packet.AckBitfield);
+            }
+        }
+
+        internal void ProcessAckBitfield(int ack, AckBitfield bitfield)
+        {
+            for (int i = 0; i <= 32; i++)
+            {
+                AckBitfield bit = (AckBitfield)(1 << i);
+                if ((bitfield & bit) == bit)
                 {
-                    AckBitfield bit = (AckBitfield)(1 << i);
-                    if ((ackBitfield & bit) == bit)
-                    {
-                        // Bit is set, remove packet from waiting list
-                        int acknowledgedSequence = ack - i;
-                        packetsWaitingForAck.Remove(acknowledgedSequence);
-                    }
+                    // Bit is set, remove packet from waiting list
+                    int acknowledgedSequence = ack - i;
+                    packetsWaitingForAck.Remove(acknowledgedSequence);
                 }
             }
         }
