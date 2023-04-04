@@ -324,11 +324,12 @@ namespace NetworkingLibrary
         internal Packet CreateSyncOrConstructPacket(PacketType packetType, string payload, Connection connection)
         {
             // Construct packet
+            DateTime sendTime = DateTime.UtcNow;
             int localSequence = connection.LocalSequence;
             int remoteSequence = connection.RemoteSequence;
             AckBitfield ackBitfield = connection.GenerateAckBitfield();
 
-            string packetData = $"/{protocolID}/{packetType}/{localSequence}/{remoteSequence}/" + payload;
+            string packetData = $"/{protocolID}/{packetType}/{sendTime:HH:mm:ss}/{localSequence}/{remoteSequence}/" + payload;
 
             byte[] ackBytes = BitConverter.GetBytes((uint)ackBitfield);
             byte[] data = Encoding.ASCII.GetBytes(packetData);
@@ -342,7 +343,7 @@ namespace NetworkingLibrary
             Array.Copy(data, 0, dataWithAckAndLength, lengthBytes.Length, data.Length);
             Array.Copy(ackBytes, 0, dataWithAckAndLength, data.Length + lengthBytes.Length, ackBytes.Length);
 
-            Packet packet = new Packet(packetType, localSequence, remoteSequence, ackBitfield, dataWithAckAndLength, connection.RemoteClient.IP, connection.RemoteClient.Port);
+            Packet packet = new Packet(packetType, localSequence, remoteSequence, ackBitfield, dataWithAckAndLength, connection.RemoteClient.IP, connection.RemoteClient.Port, sendTime);
 
             return packet;
         }
@@ -357,7 +358,7 @@ namespace NetworkingLibrary
 
             // Retrieve object info from packet
             int clientID;
-            bool parseClientID = int.TryParse(split[5].Substring(split[5].IndexOf('=') + 1), out clientID);
+            bool parseClientID = int.TryParse(split[6].Substring(split[6].IndexOf('=') + 1), out clientID);
             if (!parseClientID)
             {
                 Debug.WriteLine("Error parsing client ID, packet ignored");
@@ -365,14 +366,14 @@ namespace NetworkingLibrary
             }
 
             int objectID;
-            bool parseObjectID = int.TryParse(split[6].Substring(split[6].IndexOf('=') + 1), out objectID);
+            bool parseObjectID = int.TryParse(split[7].Substring(split[7].IndexOf('=') + 1), out objectID);
             if (!parseObjectID)
             {
                 Debug.WriteLine("Error parsing object ID, packet ignored");
                 return;
             }
 
-            string typeName = split[7];
+            string typeName = split[8];
             string typeNamespace = typeName.Substring(0, typeName.LastIndexOf('.'));
             Type objType = Type.GetType($"{typeName}, {typeNamespace}");
             if (objType == null)
@@ -408,7 +409,7 @@ namespace NetworkingLibrary
                 }
             }
 
-            //split[8] == "PROPSTART" -- signifies the start point of the construction properties in packet
+            //split[9] == "PROPSTART" -- signifies the start point of the construction properties in packet
 
             // Create dictionary based on properties included in string
             int propertyIndex = 0;
@@ -418,7 +419,7 @@ namespace NetworkingLibrary
             Dictionary<string, string> properties = new Dictionary<string, string>();
             while (true)
             {
-                currentString = split[9 + propertyIndex];
+                currentString = split[10 + propertyIndex];
                 if (currentString == "PROPEND")
                 {
                     // Reached end of properties
@@ -481,7 +482,7 @@ namespace NetworkingLibrary
 
             // Retrieve networked variable info from packet
             int clientID;
-            bool parseClientID = int.TryParse(split[5].Substring(split[5].IndexOf('=') + 1), out clientID);
+            bool parseClientID = int.TryParse(split[6].Substring(split[6].IndexOf('=') + 1), out clientID);
             if (!parseClientID)
             {
                 Debug.WriteLine("Error parsing client ID, packet ignored");
@@ -489,7 +490,7 @@ namespace NetworkingLibrary
             }
 
             int objectID;
-            bool parseObjectID = int.TryParse(split[6].Substring(split[6].IndexOf('=') + 1), out objectID);
+            bool parseObjectID = int.TryParse(split[7].Substring(split[7].IndexOf('=') + 1), out objectID);
             if (!parseObjectID)
             {
                 Debug.WriteLine("Error parsing object ID, packet ignored");
@@ -505,7 +506,7 @@ namespace NetworkingLibrary
                 }
             }
 
-            //split[7] == "VARSTART" -- signifies the start point of the networked variables in packet
+            //split[8] == "VARSTART" -- signifies the start point of the networked variables in packet
 
             // Find object corresponding to client ID and object ID
             Networked_GameObject obj = GetNetworkedObjectFromClientAndObjectID(clientID, objectID);
@@ -523,7 +524,7 @@ namespace NetworkingLibrary
                 string varValue;
                 while (true)
                 {
-                    currentString = split[8 + varIndex];
+                    currentString = split[9 + varIndex];
                     if (currentString == "VAREND")
                     {
                         // Reached end of networked variables

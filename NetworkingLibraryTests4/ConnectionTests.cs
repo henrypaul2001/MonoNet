@@ -111,7 +111,7 @@ namespace NetworkingLibrary.Tests
                     payload = "dont acknowledge me";
                 }
 
-                Packet packetToSend = new Packet(PacketType.SYNC, i, 0, AckBitfield.Ack1, Encoding.ASCII.GetBytes(payload), remoteClient.IP, remoteClient.Port);
+                Packet packetToSend = new Packet(PacketType.SYNC, i, 0, AckBitfield.Ack1, Encoding.ASCII.GetBytes(payload), remoteClient.IP, remoteClient.Port, DateTime.UtcNow);
                 testConnection.PacketSent(packetToSend);
 
                 // If packet isn't being acknowledged in this test, add it to the expected waiting for ack dictionary
@@ -152,7 +152,7 @@ namespace NetworkingLibrary.Tests
 
             for (int i = 0; i < 10; i++)
             {
-                Packet packetToSend = new Packet(PacketType.SYNC, i, 0, AckBitfield.Ack1, Encoding.ASCII.GetBytes("test"), remoteClient.IP, remoteClient.Port);
+                Packet packetToSend = new Packet(PacketType.SYNC, i, 0, AckBitfield.Ack1, Encoding.ASCII.GetBytes("test"), remoteClient.IP, remoteClient.Port, DateTime.UtcNow);
                 testConnection.PacketSent(packetToSend);
             }
 
@@ -190,7 +190,7 @@ namespace NetworkingLibrary.Tests
 
             for (int i = 0; i < 10; i++)
             {
-                Packet packetToSend = new Packet(PacketType.SYNC, i, 0, AckBitfield.Ack1, Encoding.ASCII.GetBytes("test"), remoteClient.IP, remoteClient.Port);
+                Packet packetToSend = new Packet(PacketType.SYNC, i, 0, AckBitfield.Ack1, Encoding.ASCII.GetBytes("test"), remoteClient.IP, remoteClient.Port, DateTime.UtcNow);
                 testConnection.PacketSent(packetToSend);
             }
 

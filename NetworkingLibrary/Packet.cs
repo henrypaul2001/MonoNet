@@ -80,7 +80,7 @@ namespace NetworkingLibrary
         }
 
         // Used for creating construct / sync packets on receive
-        public Packet(PacketType packetType, int sequence, int ack, AckBitfield ackBitfield, string ipSource, int portSource, byte[] data)
+        public Packet(PacketType packetType, int sequence, int ack, AckBitfield ackBitfield, string ipSource, int portSource, byte[] data, DateTime sendTime)
         {
             this.packetType = packetType;
             this.sequence = sequence;
@@ -89,8 +89,7 @@ namespace NetworkingLibrary
             this.data = data;
             this.ipSource = ipSource;
             this.portSource = portSource;
-
-            //sendTime = DateTime.Now;
+            this.sendTime = sendTime;
 
             CompressData();
         }
@@ -110,7 +109,7 @@ namespace NetworkingLibrary
         }
 
         // Used for creating construct / sync packets on send
-        public Packet(PacketType packetType, int sequence, int ack, AckBitfield ackBitfield, byte[] data, string ipDestination, int portDestination)
+        public Packet(PacketType packetType, int sequence, int ack, AckBitfield ackBitfield, byte[] data, string ipDestination, int portDestination, DateTime sendTime)
         {
             this.packetType = packetType;
             this.sequence = sequence;
@@ -119,8 +118,7 @@ namespace NetworkingLibrary
             this.data = data;
             this.ipDestination = ipDestination;
             this.portDestination = portDestination;
-
-            sendTime = DateTime.Now;
+            this.sendTime = sendTime;
 
             CompressData();
         }

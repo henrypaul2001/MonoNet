@@ -39,8 +39,9 @@ namespace NetworkingLibrary.Tests
             TestNetworkedObject obj = new TestNetworkedObject(manager, clientID, constructProperties);
             Type objType = obj.GetType();
 
-            byte[] data = Encoding.ASCII.GetBytes($"0/25/CONSTRUCT/{localSequence}/{remoteSequence}/id={clientID}/objID={obj.ObjectID}/{objType.FullName}/PROPSTART/test=testValue/anotherTest=anotherTestValue/PROPEND/");
-            Packet constructPacket = new Packet(PacketType.CONSTRUCT, localSequence, remoteSequence, AckBitfield.Ack1, sourceIP, sourcePort, data);
+            DateTime sendTime = DateTime.UtcNow;
+            byte[] data = Encoding.ASCII.GetBytes($"0/25/CONSTRUCT/{sendTime:HH:mm:ss}/{localSequence}/{remoteSequence}/id={clientID}/objID={obj.ObjectID}/{objType.FullName}/PROPSTART/test=testValue/anotherTest=anotherTestValue/PROPEND/");
+            Packet constructPacket = new Packet(PacketType.CONSTRUCT, localSequence, remoteSequence, AckBitfield.Ack1, sourceIP, sourcePort, data, sendTime);
 
             // Act
             manager.ProcessConstructPacket(constructPacket);
@@ -127,8 +128,9 @@ namespace NetworkingLibrary.Tests
             TestNetworkedObject obj = new TestNetworkedObject(manager, clientID, objID);
             Type objType = obj.GetType();
 
-            byte[] data = Encoding.ASCII.GetBytes($"/25/SYNC/{localSequence}/{remoteSequence}/id={clientID}/objID={objID}/VARSTART/testVariable=2/VAREND/");
-            Packet syncPacket = new Packet(PacketType.SYNC, localSequence, remoteSequence, AckBitfield.Ack1, sourceIP, sourcePort, data);
+            DateTime sendTime = DateTime.UtcNow;
+            byte[] data = Encoding.ASCII.GetBytes($"/25/SYNC/{sendTime:HH:mm:ss}/{localSequence}/{remoteSequence}/id={clientID}/objID={objID}/VARSTART/testVariable=2/VAREND/");
+            Packet syncPacket = new Packet(PacketType.SYNC, localSequence, remoteSequence, AckBitfield.Ack1, sourceIP, sourcePort, data, sendTime);
 
             // Act
             manager.ProcessSyncPacket(syncPacket);
@@ -175,9 +177,10 @@ namespace NetworkingLibrary.Tests
             string testString = "success";
             float testFloat = 2.2f;
 
-            byte[] data = Encoding.ASCII.GetBytes($"/25/SYNC/{localSequence}/{remoteSequence}/id={clientID}/objID={objID}/VARSTART/testInt1={testInt}/testInt2={testInt}/" +
+            DateTime sendTime = DateTime.UtcNow;
+            byte[] data = Encoding.ASCII.GetBytes($"/25/SYNC/{sendTime:HH:mm:ss}/{localSequence}/{remoteSequence}/id={clientID}/objID={objID}/VARSTART/testInt1={testInt}/testInt2={testInt}/" +
                 $"testInt3={testInt}/testInt4={testInt}/testString1={testString}/testString2={testString}/testFloat1={testFloat}/testFloat2={testFloat}/testFloat3={testFloat}/VAREND/");
-            Packet syncPacket = new Packet(PacketType.SYNC, localSequence, remoteSequence, AckBitfield.Ack1, sourceIP, sourcePort, data);
+            Packet syncPacket = new Packet(PacketType.SYNC, localSequence, remoteSequence, AckBitfield.Ack1, sourceIP, sourcePort, data, sendTime);
 
             // Act
             manager.ProcessSyncPacket(syncPacket);

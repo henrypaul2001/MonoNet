@@ -8,6 +8,65 @@ using System.Threading.Tasks;
 
 namespace NetworkingLibrary
 {
+    public struct Diagnostics
+    {
+        public int PacketsReceived;
+        public int PacketsSent;
+        public int PacketsLost;
+        public float RTT;
+        public float Latency;
+        public float PacketLossPercentage;
+
+        private float[] rttBuffer;
+        private int rttBufferStart;
+        private int rttBufferCount;
+        internal int rttBufferMaxSize;
+
+        public Diagnostics(int rttBufferSize)
+        {
+            PacketsReceived = 0;
+            PacketsSent = 0;
+            PacketsLost = 0;
+            RTT = -1;
+            Latency = -1;
+            PacketLossPercentage = 0;
+
+            rttBuffer = new float[rttBufferSize];
+            rttBufferStart = 0;
+            rttBufferCount = 0;
+            rttBufferMaxSize = rttBufferSize;
+        }
+
+        internal void AddToBuffer(float number)
+        {
+            rttBuffer[(rttBufferStart + rttBufferCount) % rttBuffer.Length] = number;
+            if (rttBufferCount < rttBuffer.Length)
+            {
+                rttBufferCount++;
+            }
+            else
+            {
+                rttBufferStart = (rttBufferStart + 1) % rttBuffer.Length;
+            }
+        }
+
+        internal void UpdateRTT(float rtt)
+        {
+            AddToBuffer(rtt);
+
+            if (rttBufferCount == rttBufferMaxSize)
+            {
+                float bufferSum = 0;
+                for (int i = 0; i < rttBufferMaxSize; i++)
+                {
+                    bufferSum += rttBuffer[i];
+                }
+
+                RTT = bufferSum / rttBufferMaxSize;
+            }
+        }
+    }
+
     public class Connection
     {
         #region stuff for unit tests
@@ -15,15 +74,6 @@ namespace NetworkingLibrary
         internal Dictionary<int, Packet> InternalPacketsWaitingForAck { get { return packetsWaitingForAck; } set { packetsWaitingForAck = value; } }
         internal List<Packet> InternalLostPackets { get { return lostPackets; } }
         #endregion
-
-        public struct Diagnostics
-        {
-            internal int PacketsReceived;
-            internal int PacketsSent;
-            internal int PacketsLost;
-            internal float RTT;
-            internal float Latency;
-        }
 
         float packetTimeoutTime;
 
@@ -46,7 +96,7 @@ namespace NetworkingLibrary
 
         public Connection(Client localClient, Client remoteClient, float packetTimeoutTime)
         {
-            diagnostics = new Diagnostics();
+            diagnostics = new Diagnostics(10);
 
             this.localClient = localClient;
             this.remoteClient = remoteClient;
@@ -140,7 +190,7 @@ namespace NetworkingLibrary
             List<int> keysToRemove = new List<int>();
             foreach (KeyValuePair<int, Packet> pair in packetsWaitingForAck)
             {
-                TimeSpan elapsedTime = DateTime.Now.Subtract(pair.Value.SendTime);
+                TimeSpan elapsedTime = DateTime.UtcNow.Subtract(pair.Value.SendTime);
                 if (elapsedTime.TotalMilliseconds >= (packetTimeoutTime * 1000))
                 {
                     // Packet is lost
@@ -194,10 +244,29 @@ namespace NetworkingLibrary
                 if ((bitfield & bit) == bit)
                 {
                     // Bit is set, remove packet from waiting list
-                    int acknowledgedSequence = ack - i;
-                    packetsWaitingForAck.Remove(acknowledgedSequence);
+                    PacketAcknowledged(ack - i);
                 }
             }
+        }
+
+        private void PacketAcknowledged(int acknowledgedSequence)
+        {
+            Packet acknowledgedPacket;
+            bool success = packetsWaitingForAck.TryGetValue(acknowledgedSequence, out acknowledgedPacket);
+            if (!success)
+            {
+                //Debug.WriteLine("Acknowledged packet was not found in waiting list, ignoring acknowledgement", "Packet Acknowledgement");
+                return;
+            }
+
+            diagnostics.UpdateRTT((float)(DateTime.UtcNow - acknowledgedPacket.SendTime).TotalMilliseconds);
+
+            packetsWaitingForAck.Remove(acknowledgedSequence);
+        }
+
+        void UpdateDiagnostics()
+        {
+
         }
 
         public override string ToString()

@@ -200,14 +200,15 @@ namespace NetworkingLibrary
             return completionStatus;
         }
 
-        internal Packet CreateConstructOrSyncPacketFromByteArray(PacketType packetType, byte[] data, string sourceIP, int sourcePort)
+        private Packet CreateConstructOrSyncPacketFromByteArray(PacketType packetType, byte[] data, string sourceIP, int sourcePort)
         {
             string payload = Encoding.ASCII.GetString(data, 0, data.Length);
 
             string[] split = payload.Split('/');
 
-            int localSequence = int.Parse(split[3]);
-            int remoteSequence = int.Parse(split[4]);
+            DateTime sendTime = DateTime.ParseExact(split[3], "HH:mm:ss", null, System.Globalization.DateTimeStyles.AssumeUniversal);
+            int localSequence = int.Parse(split[4]);
+            int remoteSequence = int.Parse(split[5]);
 
             int payloadLength = BitConverter.ToInt32(data, 0);
 
@@ -232,7 +233,7 @@ namespace NetworkingLibrary
             // Create ackbitfield from ack byte array
             AckBitfield ackBitfield = (AckBitfield)BitConverter.ToUInt32(ackBytes, 0);
 
-            Packet packet = new Packet(packetType, localSequence, remoteSequence, ackBitfield, sourceIP, sourcePort, extractedData);
+            Packet packet = new Packet(packetType, localSequence, remoteSequence, ackBitfield, sourceIP, sourcePort, extractedData, sendTime);
 
             LastPacketConstructed = packet;
             return packet;
