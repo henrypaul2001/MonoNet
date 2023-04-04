@@ -20,7 +20,7 @@ namespace NetworkingLibrary
         private float[] rttBuffer;
         private int rttBufferStart;
         private int rttBufferCount;
-        internal int rttBufferMaxSize;
+        private int rttBufferMaxSize;
 
         public Diagnostics(int rttBufferSize)
         {
