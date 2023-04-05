@@ -98,6 +98,8 @@ namespace NetworkingLibrary
         int sentPacketsBufferStart;
         int sentPacketsBufferCount;
 
+        DateTime timeAtLastPacketReceived;
+
         Client localClient;
         Client remoteClient;
 
@@ -159,6 +161,11 @@ namespace NetworkingLibrary
         public int RemoteClientID
         {
             get { return remoteClientID; }
+        }
+
+        public DateTime TimeAtLastPacketReceive
+        {
+            get { return timeAtLastPacketReceived; }
         }
 
         internal void AddToPacketBuffer(Packet packet)
@@ -255,6 +262,7 @@ namespace NetworkingLibrary
             if (packet.PacketType == PacketType.CONSTRUCT || packet.PacketType == PacketType.SYNC)
             {
                 diagnostics.PacketsReceived++;
+                timeAtLastPacketReceived = DateTime.UtcNow;
 
                 AddToSequenceBuffer(packet.Sequence);
                 if (RemoteSequence < packet.Sequence)

@@ -25,7 +25,7 @@ namespace NetworkingLibrary.Tests
             int remoteSequence = 1;
             int clientID = 567;
 
-            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000, 1000000);
 
             Client fakeRemoteClient = new Client(sourceIP, sourcePort, false, false, clientID, manager);
 
@@ -116,7 +116,7 @@ namespace NetworkingLibrary.Tests
             int clientID = 567;
             int objID = 250;
 
-            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000, 1000000);
 
             Client fakeRemoteClient = new Client(sourceIP, sourcePort, false, false, clientID, manager);
 
@@ -161,7 +161,7 @@ namespace NetworkingLibrary.Tests
             int clientID = 567;
             int objID = 250;
 
-            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000, 1000000);
 
             Client fakeRemoteClient = new Client(sourceIP, sourcePort, false, false, clientID, manager);
 
@@ -230,7 +230,7 @@ namespace NetworkingLibrary.Tests
         public void ProcessDisconectPacketTest_IsConnectionRemoved_And_IsRemoteClientRemoved()
         {
             // Arrange
-            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000, 1000000);
 
             Client fakeRemoteClient1 = new Client("111.111.1.1", 27000, false, false, 111, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient1);

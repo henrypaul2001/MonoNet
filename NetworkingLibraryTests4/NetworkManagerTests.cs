@@ -86,7 +86,9 @@ namespace NetworkingLibrary.Tests
             fakeConnection.PacketReceived(packetToReceive);
 
             // Sleep for 5 seconds, should timeout client
-            Thread.Sleep(5);
+            Thread.Sleep((int)(manager.TimeoutTime * 1000));
+
+            manager.CheckForConnectionTimeouts();
 
             int timeoutCalls = manager.ClientTimeoutCalls;
             Client lastClientToTimeout = manager.LastClientToTimeout;
@@ -100,6 +102,46 @@ namespace NetworkingLibrary.Tests
             else if (lastClientToTimeout.ToString() != fakeRemoteClient.ToString())
             {
                 Assert.Fail("ClientTimeout wasn't called with the correct client as a parameter");
+            }
+            else
+            {
+                Assert.Pass();
+            }
+        }
+
+        [Test()]
+        public void CheckForConnectionTimeoutsTest_Sleep3Seconds_ClientDoesntTimeout()
+        {
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000, 5);
+            Client fakeRemoteClient = new Client("125.125.1.1", 27000, false, false, 111, manager);
+            manager.RemoteClientsInternal.Add(fakeRemoteClient);
+
+            Connection fakeConnection = new Connection(manager.LocalClient, fakeRemoteClient, 5);
+            manager.ConnectionsInternal.Add(fakeConnection);
+
+            // Act
+            // Simulate receive of packet
+            Packet packetToReceive = new Packet(PacketType.SYNC, 1, 1, AckBitfield.Ack1, Encoding.ASCII.GetBytes("test"), manager.LocalClient.IP, manager.LocalClient.Port, DateTime.UtcNow);
+            fakeConnection.PacketReceived(packetToReceive);
+
+            // Sleep for 3 seconds, shouldn't timeout client
+            Thread.Sleep((int)((manager.TimeoutTime - 2) * 1000));
+
+            manager.CheckForConnectionTimeouts();
+
+            int timeoutCalls = manager.ClientTimeoutCalls;
+            Client lastClientToTimeout = manager.LastClientToTimeout;
+            manager.Close();
+
+            // Assert
+            if (timeoutCalls != 0)
+            {
+                Assert.Fail("ClientTimeout shouldn't be called");
+            }
+            else if (lastClientToTimeout != null)
+            {
+                Assert.Fail("A client shouldn't time out for this test");
             }
             else
             {

@@ -30,16 +30,16 @@ namespace NetworkingLibrary
         internal byte[] LastLocalClientConnectionRequest { get; set; }
         internal Dictionary<string, string> LastRemoteConstructPropertiesCreated { get; set; }
         internal int ConstructRemoteObjectCalls { get; set; }
-        internal Assembly TestAssembly {get; set;}
         internal List<string> PayloadsSent { get; set; }
         internal int DisconnectLocalClientCalls { get; set; }
-
+        internal Client LastClientToTimeout { get; set; }
 
         internal int HandleConnctionRequestCalls { get; set; } = 0;
         internal int HandleConnectionAcceptCalls { get; set; } = 0;
         internal int ProcessSyncPacketCalls { get; set; } = 0;
         internal int ProcessConstructPacketCalls { get; set; } = 0;
         internal int ProcessDisconnectPacketCalls { get; set; } = 0;
+        internal int ClientTimeoutCalls { get; set; } = 0;
         #endregion
 
         // List representing networked game objects that need to be synced
@@ -60,17 +60,48 @@ namespace NetworkingLibrary
         int protocolID;
         int port;
 
+        float timeoutTime;
+
         Client server;
 
         Client localClient;
 
         PacketManager packetManager;
 
+        public NetworkManager(ConnectionType connectionType, int protocolID, int port, float timeoutTime)
+        {
+            PayloadsSent = new List<string>(3);
+
+            this.connectionType = connectionType;
+            this.protocolID = protocolID;
+            this.port = port;
+            this.timeoutTime = timeoutTime;
+            packetManager = new PacketManager(this);
+
+            pendingClients = new List<Client>();
+            remoteClients = new List<Client>();
+            connections = new List<Connection>();
+            networkedObjects = new List<Networked_GameObject>();
+
+            if (this.connectionType == ConnectionType.PEER_TO_PEER)
+            {
+                string localIP = null;
+                IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
+                foreach (IPAddress ip in host.AddressList)
+                {
+                    if (ip.AddressFamily == AddressFamily.InterNetwork)
+                    {
+                        // IP is IPv4
+                        localIP = ip.ToString();
+                        break;
+                    }
+                }
+                localClient = new Client(localIP, false, false, true, this);
+            }
+        }
+
         public NetworkManager(ConnectionType connectionType, int protocolID, int port)
         {
-            // Load testing assembly
-            //TestAssembly = Assembly.Load("NetworkingLibraryTests4");
-
             PayloadsSent = new List<string>(3);
 
             this.connectionType = connectionType;
@@ -82,6 +113,8 @@ namespace NetworkingLibrary
             remoteClients = new List<Client>();
             connections = new List<Connection>();
             networkedObjects = new List<Networked_GameObject>();
+
+            timeoutTime = 5;
 
             if (this.connectionType == ConnectionType.PEER_TO_PEER)
             {
@@ -118,6 +151,11 @@ namespace NetworkingLibrary
         public List<Connection> Connections
         {
             get { return connections; }
+        }
+
+        public float TimeoutTime
+        {
+            get { return timeoutTime; }
         }
 
         internal List<Connection> ConnectionsInternal
@@ -165,6 +203,8 @@ namespace NetworkingLibrary
 
         public void Update()
         {
+            CheckForConnectionTimeouts();
+
             // Sync game state
             SendGameState();
 
@@ -172,6 +212,25 @@ namespace NetworkingLibrary
             foreach (Connection connection in connections)
             {
                 connection.CheckForLostPackets();
+            }
+        }
+
+        internal void CheckForConnectionTimeouts()
+        {
+            List<Connection> timedOutConnections = new List<Connection>();
+            foreach (Connection connection in connections)
+            {
+                TimeSpan timeSinceReceive = DateTime.UtcNow.Subtract(connection.TimeAtLastPacketReceive);
+                if (timeSinceReceive.TotalMilliseconds >= (timeoutTime * 1000))
+                {
+                    timedOutConnections.Add(connection);
+                }
+            }
+
+            foreach (Connection connection in timedOutConnections)
+            {
+                LastClientToTimeout = connection.RemoteClient;
+                ClientTimeout(connection.RemoteClient);
             }
         }
 
@@ -378,25 +437,11 @@ namespace NetworkingLibrary
             Type objType = Type.GetType($"{typeName}, {typeNamespace}");
             if (objType == null)
             {
-                if (TestAssembly != null)
+                if (objType == null)
                 {
-                    // Try finding type from the test assembly
-                    Type[] types = TestAssembly.GetTypes(); 
-                    foreach (Type t in types)
-                    {
-                        if (t.FullName == typeName)
-                        {
-                            objType = t;
-                            break;
-                        }
-                    }
-
-                    if (objType == null)
-                    {
-                        // Oh dear
-                        Debug.WriteLine("Error parsing object type, packet ignored");
-                        return;
-                    }
+                    // Oh dear
+                    Debug.WriteLine("Error parsing object type, packet ignored");
+                    return;
                 }
             }
 
@@ -585,6 +630,7 @@ namespace NetworkingLibrary
         internal void ProcessDisconnectPacket(Packet disconnectPacket)
         {
             ProcessDisconnectPacketCalls++;
+
             // Find the client that disconnected
             string data = Encoding.ASCII.GetString(disconnectPacket.Data);
             string[] split = data.Split('/');
@@ -774,6 +820,8 @@ namespace NetworkingLibrary
 
         public virtual void ClientTimeout(Client lostClient)
         {
+            ClientTimeoutCalls++;
+
             foreach (Connection connection in connections)
             {
                 if (connection.RemoteClient == lostClient)
