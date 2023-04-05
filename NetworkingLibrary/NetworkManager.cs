@@ -33,6 +33,7 @@ namespace NetworkingLibrary
         internal List<string> PayloadsSent { get; set; }
         internal int DisconnectLocalClientCalls { get; set; }
         internal Client LastClientToTimeout { get; set; }
+        internal Assembly TestAssembly { get; set; }
 
         internal int HandleConnctionRequestCalls { get; set; } = 0;
         internal int HandleConnectionAcceptCalls { get; set; } = 0;
@@ -70,6 +71,9 @@ namespace NetworkingLibrary
 
         public NetworkManager(ConnectionType connectionType, int protocolID, int port, float timeoutTime)
         {
+            // Load testing assembly
+            TestAssembly = Assembly.Load("NetworkingLibraryTests4");
+
             PayloadsSent = new List<string>(3);
 
             this.connectionType = connectionType;
@@ -102,6 +106,9 @@ namespace NetworkingLibrary
 
         public NetworkManager(ConnectionType connectionType, int protocolID, int port)
         {
+            // Load testing assembly
+            TestAssembly = Assembly.Load("NetworkingLibraryTests4");
+
             PayloadsSent = new List<string>(3);
 
             this.connectionType = connectionType;
@@ -437,6 +444,17 @@ namespace NetworkingLibrary
             Type objType = Type.GetType($"{typeName}, {typeNamespace}");
             if (objType == null)
             {
+                // Try finding type from the test assembly
+                Type[] types = TestAssembly.GetTypes();
+                foreach (Type t in types)
+                {
+                    if (t.FullName == typeName)
+                    {
+                        objType = t;
+                        break;
+                    }
+                }
+
                 if (objType == null)
                 {
                     // Oh dear
