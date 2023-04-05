@@ -30,7 +30,7 @@ namespace NetworkingLibrary.Tests
 
             for (int i = 0; i < 101; i++)
             {
-                testConnection.AddToBuffer(i);
+                testConnection.AddToSequenceBuffer(i);
             }
 
             testConnection.InternalRemoteSequence = testRemoteSequence;
@@ -65,7 +65,7 @@ namespace NetworkingLibrary.Tests
             {
                 if (!missingSequences.Contains(i))
                 {
-                    testConnection.AddToBuffer(i);
+                    testConnection.AddToSequenceBuffer(i);
                 }
             }
 

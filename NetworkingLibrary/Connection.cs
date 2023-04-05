@@ -13,8 +13,9 @@ namespace NetworkingLibrary
         public int PacketsReceived;
         public int PacketsSent;
         public int PacketsLost;
+
         public float RTT;
-        public float Latency;
+        public float LatencyEstimation;
         public float PacketLossPercentage;
 
         private float[] rttBuffer;
@@ -28,8 +29,8 @@ namespace NetworkingLibrary
             PacketsSent = 0;
             PacketsLost = 0;
             RTT = -1;
-            Latency = -1;
-            PacketLossPercentage = 0;
+            LatencyEstimation = -1;
+            PacketLossPercentage = 1;
 
             rttBuffer = new float[rttBufferSize];
             rttBufferStart = 0;
@@ -37,7 +38,7 @@ namespace NetworkingLibrary
             rttBufferMaxSize = rttBufferSize;
         }
 
-        internal void AddToBuffer(float number)
+        private void AddToBuffer(float number)
         {
             rttBuffer[(rttBufferStart + rttBufferCount) % rttBuffer.Length] = number;
             if (rttBufferCount < rttBuffer.Length)
@@ -63,7 +64,13 @@ namespace NetworkingLibrary
                 }
 
                 RTT = bufferSum / rttBufferMaxSize;
+                LatencyEstimation = RTT / 2;
             }
+        }
+
+        internal void UpdatePacketLossPercentage(float totalSent, float totalLost)
+        {
+            PacketLossPercentage = (totalLost / totalSent) * 100;
         }
     }
 
@@ -73,18 +80,23 @@ namespace NetworkingLibrary
         internal int InternalRemoteSequence { set { remoteSequence = value; } }
         internal Dictionary<int, Packet> InternalPacketsWaitingForAck { get { return packetsWaitingForAck; } set { packetsWaitingForAck = value; } }
         internal List<Packet> InternalLostPackets { get { return lostPackets; } }
+        internal Packet[] InternalSentPacketsBuffer { get { return sentPacketsBuffer; } set { sentPacketsBuffer = value; } }
         #endregion
 
         float packetTimeoutTime;
 
-        int[] buffer;
-        int bufferStart;
-        int bufferCount;
+        int[] sequenceBuffer;
+        int sequenceBufferStart;
+        int sequenceBufferCount;
 
         Diagnostics diagnostics;
 
         Dictionary<int, Packet> packetsWaitingForAck;
         List<Packet> lostPackets;
+
+        Packet[] sentPacketsBuffer;
+        int sentPacketsBufferStart;
+        int sentPacketsBufferCount;
 
         Client localClient;
         Client remoteClient;
@@ -107,9 +119,13 @@ namespace NetworkingLibrary
             remoteSequence = 0;
             localSequence = 0;
 
-            buffer = new int[33];
-            bufferStart = 0;
-            bufferCount = 0;
+            sequenceBuffer = new int[33];
+            sequenceBufferStart = 0;
+            sequenceBufferCount = 0;
+
+            sentPacketsBuffer = new Packet[100];
+            sentPacketsBufferStart = 0;
+            sentPacketsBufferCount = 0;
 
             packetsWaitingForAck = new Dictionary<int, Packet>();
             lostPackets = new List<Packet>();
@@ -145,24 +161,37 @@ namespace NetworkingLibrary
             get { return remoteClientID; }
         }
 
-        internal void AddToBuffer(int number)
+        internal void AddToPacketBuffer(Packet packet)
         {
-            buffer[(bufferStart + bufferCount) % buffer.Length] = number;
-            if (bufferCount < buffer.Length)
+            sentPacketsBuffer[(sentPacketsBufferStart + sentPacketsBufferCount) % sentPacketsBuffer.Length] = packet;
+            if (sentPacketsBufferCount < sentPacketsBuffer.Length)
             {
-                bufferCount++;
+                sentPacketsBufferCount++;
             }
             else
             {
-                bufferStart = (bufferStart + 1) % buffer.Length;
+                sentPacketsBufferStart = (sentPacketsBufferStart + 1) % sentPacketsBuffer.Length;
+            }
+        }
+
+        internal void AddToSequenceBuffer(int number)
+        {
+            sequenceBuffer[(sequenceBufferStart + sequenceBufferCount) % sequenceBuffer.Length] = number;
+            if (sequenceBufferCount < sequenceBuffer.Length)
+            {
+                sequenceBufferCount++;
+            }
+            else
+            {
+                sequenceBufferStart = (sequenceBufferStart + 1) % sequenceBuffer.Length;
             }
         }
 
         internal bool BufferContains(int number)
         {
-            for (int i = 0; i < bufferCount; i++)
+            for (int i = 0; i < sequenceBufferCount; i++)
             {
-                if (buffer[(bufferStart + i) % buffer.Length] == number)
+                if (sequenceBuffer[(sequenceBufferStart + i) % sequenceBuffer.Length] == number)
                 {
                     return true;
                 }
@@ -196,6 +225,7 @@ namespace NetworkingLibrary
                     // Packet is lost
                     Debug.WriteLine($"Packet lost: sequence number={pair.Value.Sequence} time sent={pair.Value.SendTime}", "Packet Loss");
                     keysToRemove.Add(pair.Key);
+                    pair.Value.PacketLost = true;
                     lostPackets.Add(pair.Value);
                     diagnostics.PacketsLost++;
                 }
@@ -215,6 +245,8 @@ namespace NetworkingLibrary
                 diagnostics.PacketsSent++;
                 localSequence++;
                 packetsWaitingForAck.Add(packet.Sequence, packet);
+                AddToPacketBuffer(packet);
+                diagnostics.UpdatePacketLossPercentage(sentPacketsBufferCount, GetPacketsLostInBuffer());
             }
         }
 
@@ -224,7 +256,7 @@ namespace NetworkingLibrary
             {
                 diagnostics.PacketsReceived++;
 
-                AddToBuffer(packet.Sequence);
+                AddToSequenceBuffer(packet.Sequence);
                 if (RemoteSequence < packet.Sequence)
                 {
                     // Packet is newer
@@ -259,14 +291,24 @@ namespace NetworkingLibrary
                 return;
             }
 
-            diagnostics.UpdateRTT((float)(DateTime.UtcNow - acknowledgedPacket.SendTime).TotalMilliseconds);
+            float rtt = (float)(DateTime.UtcNow - acknowledgedPacket.SendTime).TotalMilliseconds;
 
             packetsWaitingForAck.Remove(acknowledgedSequence);
+
+            diagnostics.UpdateRTT(rtt);
         }
 
-        void UpdateDiagnostics()
+        internal int GetPacketsLostInBuffer()
         {
-
+            int packetsLost = 0;
+            for (int  i = 0; i < sentPacketsBufferCount; i++)
+            {
+                if (sentPacketsBuffer[i].PacketLost)
+                {
+                    packetsLost++;
+                }
+            }
+            return packetsLost;
         }
 
         public override string ToString()

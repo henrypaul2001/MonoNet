@@ -65,5 +65,33 @@ namespace NetworkingLibrary.Tests
             // Assert - calculated RTT should be an average of the 10 most recently received RTT values
             Assert.AreEqual(expected, actual);
         }
+
+        [Test()]
+        public void UpdatePacketLossPercentageTest_StructIsUpdatedCorrectly()
+        {
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
+            Client remoteClient = new Client("123.123.2.2", 28000, false, false, 123, manager);
+            Connection testConnection = new Connection(manager.LocalClient, remoteClient, 5);
+
+            // Act
+            // Simulate sending of 100 packets with the first 24 being lost packets
+            for (int i = 0; i < 100; i++)
+            {
+                Packet packetToSend = new Packet(PacketType.SYNC, i, 0, AckBitfield.Ack1, Encoding.ASCII.GetBytes("test"), remoteClient.IP, remoteClient.Port, DateTime.UtcNow);
+                if (i < 24)
+                {
+                    packetToSend.PacketLost = true;
+                }
+                testConnection.PacketSent(packetToSend);
+            }
+
+            testConnection.DiagnosticInfo.UpdatePacketLossPercentage(100, testConnection.GetPacketsLostInBuffer());
+            float actual = testConnection.DiagnosticInfo.PacketLossPercentage;
+            manager.Close();
+
+            // Assert
+            Assert.AreEqual(24.0f, actual);
+        }
     }
 }

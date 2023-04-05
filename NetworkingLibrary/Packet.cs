@@ -70,6 +70,8 @@ namespace NetworkingLibrary
 
         DateTime sendTime;
 
+        bool lost;
+
         // Used for creating requst / accept packets on receive
         public Packet(PacketType packetType, string ipSource, int portSource, byte[] data)
         {
@@ -77,6 +79,7 @@ namespace NetworkingLibrary
             this.ipSource = ipSource;
             this.data = data;
             this.portSource = portSource;
+            lost = false;
         }
 
         // Used for creating construct / sync packets on receive
@@ -90,6 +93,7 @@ namespace NetworkingLibrary
             this.ipSource = ipSource;
             this.portSource = portSource;
             this.sendTime = sendTime;
+            lost = false;
 
             CompressData();
         }
@@ -102,6 +106,7 @@ namespace NetworkingLibrary
             this.portDestination = portDestination;
             this.data = data;
             this.packetType = packetType;
+            lost = false;
 
             sendTime = DateTime.Now;
 
@@ -119,6 +124,7 @@ namespace NetworkingLibrary
             this.ipDestination = ipDestination;
             this.portDestination = portDestination;
             this.sendTime = sendTime;
+            lost = false;
 
             CompressData();
         }
@@ -178,6 +184,12 @@ namespace NetworkingLibrary
             get { return ackBitfield; }
         }
 
+        internal bool PacketLost
+        {
+            get { return lost; }
+            set { lost = value; }
+        }
+        
         void CompressData()
         {
             compressedData = data;
