@@ -10,6 +10,11 @@ namespace NetworkingLibrary.Tests
 {
     public class TestNetworkManager : NetworkManager
     {
+        public TestNetworkManager(ConnectionType connectionType, int protocolID, int port, float timeoutTime) : base(connectionType, protocolID, port, timeoutTime)
+        {
+
+        }
+
         public TestNetworkManager(ConnectionType connectionType, int protocolID, int port) : base(connectionType, protocolID, port)
         {
         }

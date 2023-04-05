@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace NetworkingLibrary.Tests
 {
@@ -66,6 +67,44 @@ namespace NetworkingLibrary.Tests
             string actualPayload = manager.LastPayloadSent;
             manager.Close();
             Assert.AreEqual(expectedPayload, actualPayload);
+        }
+
+        [Test()]
+        public void CheckForConnectionTimeoutsTest_Sleep5Seconds_IsTimeoutMethodCalled_WithCorrectParameters()
+        {
+            // Arrange
+            TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000, 5);
+            Client fakeRemoteClient = new Client("125.125.1.1", 27000, false, false, 111, manager);
+            manager.RemoteClientsInternal.Add(fakeRemoteClient);
+
+            Connection fakeConnection = new Connection(manager.LocalClient, fakeRemoteClient, 5);
+            manager.ConnectionsInternal.Add(fakeConnection);
+
+            // Act
+            // Simulate receive of packet
+            Packet packetToReceive = new Packet(PacketType.SYNC, 1, 1, AckBitfield.Ack1, Encoding.ASCII.GetBytes("test"), manager.LocalClient.IP, manager.LocalClient.Port, DateTime.UtcNow);
+            fakeConnection.PacketReceived(packetToReceive);
+
+            // Sleep for 5 seconds, should timeout client
+            Thread.Sleep(5);
+
+            int timeoutCalls = manager.ClientTimeoutCalls;
+            Client lastClientToTimeout = manager.LastClientToTimeout;
+            manager.Close();
+
+            // Assert
+            if (timeoutCalls != 1)
+            {
+                Assert.Fail("ClientTimeout needs to be called 1 time");
+            }
+            else if (lastClientToTimeout.ToString() != fakeRemoteClient.ToString())
+            {
+                Assert.Fail("ClientTimeout wasn't called with the correct client as a parameter");
+            }
+            else
+            {
+                Assert.Pass();
+            }
         }
 
         [Test()]
