@@ -98,6 +98,7 @@ namespace NetworkingLibrary.Tests
 
             // Create packets and pass to test connection to simulate the sending of packets
             List<int> sequencesToAcknowledge = new List<int>() { 0, 1, 2, 3, 4, 5, 10, 11, 12, 13, 14, 20, 21 };
+            //List<Packet> expected = new List<Packet>();
             Dictionary<int, Packet> expected = new Dictionary<int, Packet>();
             for (int i = 0; i < 33; i++)
             {
@@ -134,6 +135,7 @@ namespace NetworkingLibrary.Tests
             // Act
             testConnection.ProcessAckBitfield(sequencesToAcknowledge.Last(), testBitfield);
             Dictionary<int, Packet> actual = testConnection.InternalPacketsWaitingForAck;
+            //List<Packet> actual = testConnection.InternalWaitingPackets;
             manager.Close();
 
             // Assert
@@ -160,6 +162,7 @@ namespace NetworkingLibrary.Tests
             Thread.Sleep((packetTimeoutTime + 1) * 1000); // sleep for timeout time
             testConnection.CheckForLostPackets();
             Dictionary<int, Packet> waitingList = testConnection.InternalPacketsWaitingForAck;
+            //List<Packet> waitingList = testConnection.InternalWaitingPackets;
             List<Packet> lostPackets = testConnection.InternalLostPackets;
             manager.Close();
 
@@ -198,13 +201,14 @@ namespace NetworkingLibrary.Tests
             Thread.Sleep((packetTimeoutTime - 2) * 1000); // sleep for timeout time - 2 seconds
             testConnection.CheckForLostPackets();
             Dictionary<int, Packet> waitingList = testConnection.InternalPacketsWaitingForAck;
+            //List<Packet> waitingList = testConnection.InternalWaitingPackets;
             List<Packet> lostPackets = testConnection.InternalLostPackets;
             manager.Close();
 
             // Assert
             if (waitingList.Count != 10)
             {
-                Assert.Fail($"Waiting for ack dictionary doesn't have required number of packets: Expected 10, Actual {waitingList.Count}");
+                Assert.Fail($"Waiting packets list doesn't have required number of packets: Expected 10, Actual {waitingList.Count}");
             }
             else if (lostPackets.Count != 0)
             {

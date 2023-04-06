@@ -62,6 +62,7 @@ namespace NetworkingLibrary
         int port;
 
         float timeoutTime;
+        float timeoutGracePeriod;
 
         Client server;
 
@@ -71,8 +72,15 @@ namespace NetworkingLibrary
 
         public NetworkManager(ConnectionType connectionType, int protocolID, int port, float timeoutTime)
         {
-            // Load testing assembly
-            TestAssembly = Assembly.Load("NetworkingLibraryTests4");
+            try
+            {
+                // Load testing assembly
+                TestAssembly = Assembly.Load("NetworkingLibraryTests4");
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e);
+            }
 
             PayloadsSent = new List<string>(3);
 
@@ -80,6 +88,7 @@ namespace NetworkingLibrary
             this.protocolID = protocolID;
             this.port = port;
             this.timeoutTime = timeoutTime;
+            timeoutGracePeriod = 3;
             packetManager = new PacketManager(this);
 
             pendingClients = new List<Client>();
@@ -106,8 +115,15 @@ namespace NetworkingLibrary
 
         public NetworkManager(ConnectionType connectionType, int protocolID, int port)
         {
-            // Load testing assembly
-            TestAssembly = Assembly.Load("NetworkingLibraryTests4");
+            try
+            {
+                // Load testing assembly
+                TestAssembly = Assembly.Load("NetworkingLibraryTests4");
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine(e);
+            }
 
             PayloadsSent = new List<string>(3);
 
@@ -122,6 +138,7 @@ namespace NetworkingLibrary
             networkedObjects = new List<Networked_GameObject>();
 
             timeoutTime = 5;
+            timeoutGracePeriod = 3;
 
             if (this.connectionType == ConnectionType.PEER_TO_PEER)
             {
@@ -218,7 +235,7 @@ namespace NetworkingLibrary
             // Check all connections for lost packets
             foreach (Connection connection in connections)
             {
-                connection.CheckForLostPackets();
+                connection.CheckForLostPackets(); 
             }
         }
 
@@ -227,10 +244,17 @@ namespace NetworkingLibrary
             List<Connection> timedOutConnections = new List<Connection>();
             foreach (Connection connection in connections)
             {
-                TimeSpan timeSinceReceive = DateTime.UtcNow.Subtract(connection.TimeAtLastPacketReceive);
-                if (timeSinceReceive.TotalMilliseconds >= (timeoutTime * 1000))
+                if (connection.TimeAtLastPacketReceive != null)
                 {
-                    timedOutConnections.Add(connection);
+                    TimeSpan timeSinceConnectionEstablished = DateTime.UtcNow.Subtract(connection.TimeAtConnectionEstablished);
+                    if (timeSinceConnectionEstablished.TotalMilliseconds >= (timeoutGracePeriod * 1000))
+                    {
+                        TimeSpan timeSinceReceive = DateTime.UtcNow.Subtract(connection.TimeAtLastPacketReceive);
+                        if (timeSinceReceive.TotalMilliseconds >= (timeoutTime * 1000))
+                        {
+                            timedOutConnections.Add(connection);
+                        }
+                    }
                 }
             }
 

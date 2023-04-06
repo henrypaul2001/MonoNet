@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -78,9 +79,12 @@ namespace NetworkingLibrary
     {
         #region stuff for unit tests
         internal int InternalRemoteSequence { set { remoteSequence = value; } }
-        internal Dictionary<int, Packet> InternalPacketsWaitingForAck { get { return packetsWaitingForAck; } set { packetsWaitingForAck = value; } }
+        //internal Dictionary<int, Packet> InternalPacketsWaitingForAck { get { return packetsWaitingForAck; } set { packetsWaitingForAck = value; } }
         internal List<Packet> InternalLostPackets { get { return lostPackets; } }
         internal Packet[] InternalSentPacketsBuffer { get { return sentPacketsBuffer; } set { sentPacketsBuffer = value; } }
+        //internal ConcurrentBag<Packet> InternalWaitingPackets { get { return waitingPackets; } set { waitingPackets = value; } }
+        //internal List<Packet> InternalWaitingPackets { get { return waitingPackets; } set { waitingPackets = value; } }
+        internal Dictionary<int, Packet> InternalPacketsWaitingForAck { get { return packetsWaitingForAck; } set { packetsWaitingForAck = value; } }
         #endregion
 
         float packetTimeoutTime;
@@ -91,6 +95,10 @@ namespace NetworkingLibrary
 
         Diagnostics diagnostics;
 
+        object waitingListLock;
+
+        //ConcurrentBag<Packet> waitingPackets = new ConcurrentBag<Packet>();
+        //List<Packet> waitingPackets;
         Dictionary<int, Packet> packetsWaitingForAck;
         List<Packet> lostPackets;
 
@@ -99,6 +107,7 @@ namespace NetworkingLibrary
         int sentPacketsBufferCount;
 
         DateTime timeAtLastPacketReceived;
+        DateTime timeAtConnectionEstablished;
 
         Client localClient;
         Client remoteClient;
@@ -129,8 +138,14 @@ namespace NetworkingLibrary
             sentPacketsBufferStart = 0;
             sentPacketsBufferCount = 0;
 
+            //waitingPackets = new ConcurrentBag<Packet>();
+            //waitingPackets = new List<Packet>();
             packetsWaitingForAck = new Dictionary<int, Packet>();
             lostPackets = new List<Packet>();
+
+            timeAtConnectionEstablished = DateTime.UtcNow;
+
+            waitingListLock = new object();
         }
 
         public Diagnostics DiagnosticInfo
@@ -166,6 +181,11 @@ namespace NetworkingLibrary
         public DateTime TimeAtLastPacketReceive
         {
             get { return timeAtLastPacketReceived; }
+        }
+
+        public DateTime TimeAtConnectionEstablished
+        {
+            get { return timeAtConnectionEstablished; }
         }
 
         internal void AddToPacketBuffer(Packet packet)
@@ -223,35 +243,70 @@ namespace NetworkingLibrary
 
         internal void CheckForLostPackets()
         {
-            List<int> keysToRemove = new List<int>();
-            foreach (KeyValuePair<int, Packet> pair in packetsWaitingForAck)
+            /*
+            List<Packet> packetsToRemove = new List<Packet>();
+            foreach (Packet packet in waitingPackets)
             {
-                TimeSpan elapsedTime = DateTime.UtcNow.Subtract(pair.Value.SendTime);
+                TimeSpan elapsedTime = DateTime.UtcNow.Subtract(packet.SendTime);
                 if (elapsedTime.TotalMilliseconds >= (packetTimeoutTime * 1000))
                 {
                     // Packet is lost
-                    Debug.WriteLine($"Packet lost: sequence number={pair.Value.Sequence} time sent={pair.Value.SendTime}", "Packet Loss");
-                    keysToRemove.Add(pair.Key);
-                    pair.Value.PacketLost = true;
-                    lostPackets.Add(pair.Value);
+                    Debug.WriteLine($"Packet lost: sequence number={packet.Sequence} time sent={packet.SendTime}", "Packet Loss");
+                    packetsToRemove.Add(packet);
+                    packet.PacketLost = true;
+                    lostPackets.Add(packet);
                     diagnostics.PacketsLost++;
                 }
             }
 
             // Remove lost packets from waiting list
-            for (int i = 0; i < keysToRemove.Count; i++)
+            for (int i = 0; i < packetsToRemove.Count; i++)
             {
-                packetsWaitingForAck.Remove(keysToRemove[i]);
+                Packet removedPacket;
+                waitingPackets.
+                waitingPackets.Remove(packetsToRemove[i]);
             }
+            */
+
+            
+            List<int> keysToRemove = new List<int>();
+            // lock
+            lock (waitingListLock)
+            {
+                foreach (KeyValuePair<int, Packet> pair in packetsWaitingForAck)
+                {
+                    TimeSpan elapsedTime = DateTime.UtcNow.Subtract(pair.Value.SendTime);
+                    if (elapsedTime.TotalMilliseconds >= (packetTimeoutTime * 1000))
+                    {
+                        // Packet is lost
+                        Debug.WriteLine($"Packet lost: sequence number={pair.Value.Sequence} time sent={pair.Value.SendTime}", "Packet Loss");
+                        keysToRemove.Add(pair.Key);
+                        pair.Value.PacketLost = true;
+                        lostPackets.Add(pair.Value);
+                        diagnostics.PacketsLost++;
+                    }
+                }
+
+                // Remove lost packets from waiting list
+                for (int i = 0; i < keysToRemove.Count; i++)
+                {
+                    packetsWaitingForAck.Remove(keysToRemove[i]);
+                }
+            }
+            // unlock
         }
 
         internal void PacketSent(Packet packet)
         {
+            diagnostics.PacketsSent++;
             if (packet.PacketType == PacketType.CONSTRUCT || packet.PacketType == PacketType.SYNC)
             {
-                diagnostics.PacketsSent++;
                 localSequence++;
-                packetsWaitingForAck.Add(packet.Sequence, packet);
+                lock (waitingListLock)
+                {
+                    packetsWaitingForAck.Add(packet.Sequence, packet);
+                    //waitingPackets.Add(packet);
+                }
                 AddToPacketBuffer(packet);
                 diagnostics.UpdatePacketLossPercentage(sentPacketsBufferCount, GetPacketsLostInBuffer());
             }
@@ -263,7 +318,6 @@ namespace NetworkingLibrary
             {
                 diagnostics.PacketsReceived++;
                 timeAtLastPacketReceived = DateTime.UtcNow;
-
                 AddToSequenceBuffer(packet.Sequence);
                 if (RemoteSequence < packet.Sequence)
                 {
@@ -284,26 +338,61 @@ namespace NetworkingLibrary
                 if ((bitfield & bit) == bit)
                 {
                     // Bit is set, remove packet from waiting list
-                    PacketAcknowledged(ack - i);
+                    if (ack - i >= 0)
+                    {
+                        Task.Run(() => PacketAcknowledged(ack - i));
+                    }
+                    else
+                    {
+                        Debug.WriteLine("test");
+                    }
                 }
             }
         }
 
+        /*
+        Packet FindWaitingPacketFromSequence(int sequence)
+        {
+            foreach (Packet packet in waitingPackets)
+            {
+                if (packet.Sequence == sequence)
+                {
+                    // Found packet
+                    return packet;
+                }
+            }
+            return null;
+        }
+        */
+
         private void PacketAcknowledged(int acknowledgedSequence)
         {
+            //Packet acknowledgedPacket = FindWaitingPacketFromSequence(acknowledgedSequence);
+
             Packet acknowledgedPacket;
-            bool success = packetsWaitingForAck.TryGetValue(acknowledgedSequence, out acknowledgedPacket);
-            if (!success)
+            lock (waitingListLock)
             {
-                //Debug.WriteLine("Acknowledged packet was not found in waiting list, ignoring acknowledgement", "Packet Acknowledgement");
-                return;
+                bool success = packetsWaitingForAck.TryGetValue(acknowledgedSequence, out acknowledgedPacket);
+                if (!success)
+                {
+                    //Debug.WriteLine("Acknowledged packet was not found in waiting list, ignoring acknowledgement", "Packet Acknowledgement");
+                    return;
+                }
+
+                packetsWaitingForAck.Remove(acknowledgedSequence);
             }
 
             float rtt = (float)(DateTime.UtcNow - acknowledgedPacket.SendTime).TotalMilliseconds;
-
-            packetsWaitingForAck.Remove(acknowledgedSequence);
-
             diagnostics.UpdateRTT(rtt);
+            
+            /*
+            if (acknowledgedPacket != null)
+            {
+                
+                //waitingPackets.Remove(acknowledgedPacket);
+                diagnostics.UpdateRTT(rtt);
+            }
+            */
         }
 
         internal int GetPacketsLostInBuffer()
