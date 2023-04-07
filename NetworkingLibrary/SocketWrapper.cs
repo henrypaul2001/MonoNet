@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -24,7 +25,15 @@ namespace NetworkingLibrary
 
         public virtual IAsyncResult BeginReceiveFrom(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback callback, object state)
         {
-            return Socket.BeginReceiveFrom(buffer, offset, size, socketFlags, ref remoteEP, callback, state);
+            try
+            {
+                return Socket.BeginReceiveFrom(buffer, offset, size, socketFlags, ref remoteEP, callback, state);
+            }
+            catch (Exception e) 
+            {
+                Debug.WriteLine(e);
+                return null;
+            }
         }
 
         public virtual IAsyncResult BeginSendTo(byte[] buffer, int offset, int size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback callback, object state)
@@ -44,7 +53,14 @@ namespace NetworkingLibrary
 
         public virtual int EndReceiveFrom(IAsyncResult asyncResult, ref EndPoint endPoint)
         {
-            return Socket.EndReceiveFrom(asyncResult, ref endPoint);
+            try
+            {
+                return Socket.EndReceiveFrom(asyncResult, ref endPoint);
+            } catch (Exception e) 
+            {
+                Debug.WriteLine(e);
+                return -1;
+            }
         }
 
         public virtual int EndSend(IAsyncResult asyncResult)

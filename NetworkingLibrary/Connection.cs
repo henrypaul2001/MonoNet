@@ -296,19 +296,24 @@ namespace NetworkingLibrary
             // unlock
         }
 
+        private void AddPacketToWaitingList(Packet packet)
+        {
+            lock (waitingListLock)
+            {
+                packetsWaitingForAck.Add(packet.Sequence, packet);
+                //waitingPackets.Add(packet);
+            }
+        }
+
         internal void PacketSent(Packet packet)
         {
             diagnostics.PacketsSent++;
             if (packet.PacketType == PacketType.CONSTRUCT || packet.PacketType == PacketType.SYNC)
             {
                 localSequence++;
-                lock (waitingListLock)
-                {
-                    packetsWaitingForAck.Add(packet.Sequence, packet);
-                    //waitingPackets.Add(packet);
-                }
+                Task.Run(() => AddPacketToWaitingList(packet));
                 AddToPacketBuffer(packet);
-                diagnostics.UpdatePacketLossPercentage(sentPacketsBufferCount, GetPacketsLostInBuffer());
+                Task.Run(() => diagnostics.UpdatePacketLossPercentage(sentPacketsBufferCount, GetPacketsLostInBuffer()));
             }
         }
 
@@ -368,6 +373,7 @@ namespace NetworkingLibrary
         private void PacketAcknowledged(int acknowledgedSequence)
         {
             //Packet acknowledgedPacket = FindWaitingPacketFromSequence(acknowledgedSequence);
+            DateTime timeNow = DateTime.UtcNow;
 
             Packet acknowledgedPacket;
             lock (waitingListLock)
@@ -382,7 +388,7 @@ namespace NetworkingLibrary
                 packetsWaitingForAck.Remove(acknowledgedSequence);
             }
 
-            float rtt = (float)(DateTime.UtcNow - acknowledgedPacket.SendTime).TotalMilliseconds;
+            float rtt = (float)(timeNow - acknowledgedPacket.SendTime).TotalMilliseconds;
             diagnostics.UpdateRTT(rtt);
             
             /*
@@ -398,11 +404,14 @@ namespace NetworkingLibrary
         internal int GetPacketsLostInBuffer()
         {
             int packetsLost = 0;
-            for (int  i = 0; i < sentPacketsBufferCount; i++)
+            for (int i = 0; i < sentPacketsBufferCount; i++)
             {
-                if (sentPacketsBuffer[i].PacketLost)
+                if (sentPacketsBuffer[i] != null)
                 {
-                    packetsLost++;
+                    if (sentPacketsBuffer[i].PacketLost)
+                    {
+                        packetsLost++;
+                    }
                 }
             }
             return packetsLost;

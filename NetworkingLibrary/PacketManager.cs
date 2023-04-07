@@ -36,15 +36,15 @@ namespace NetworkingLibrary
             socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, remoteEP, result =>
             {
                 // Pass extra parameters to callback
-                ReceiveCallback(result, buffer, networkManager);
+                ReceiveCallback(result, buffer, socket, networkManager);
             }, socket);
         }
 
-        private void ReceiveCallback(IAsyncResult result, byte[] data, NetworkManager networkManager)
+        private void ReceiveCallback(IAsyncResult result, byte[] data, ISocket socket, NetworkManager networkManager)
         {
             try
             {
-                ISocket socket = (ISocket)result.AsyncState;
+                //ISocket socket = (ISocket)result.AsyncState;
 
                 // Create new endpoint that will represent the IP address of the sender
                 EndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
@@ -102,6 +102,7 @@ namespace NetworkingLibrary
             } catch (Exception e)
             {
                 Debug.WriteLine(e, "Packet I/O");
+                StartReceiving(socket, networkManager);
                 PacketsIgnored++;
             }
         }
@@ -114,15 +115,15 @@ namespace NetworkingLibrary
             socket.BeginSendTo(packet.CompressedData, 0, packet.CompressedData.Length, SocketFlags.None, destination, result =>
             {
                 // Pass extra parameters to callback
-                SendCallback(result, destination);
+                SendCallback(result, socket, destination);
             }, socket);
         }
 
-        private void SendCallback(IAsyncResult result, IPEndPoint remoteEP)
+        private void SendCallback(IAsyncResult result, ISocket socket, IPEndPoint remoteEP)
         {
             try
             {
-                ISocket socket = (ISocket)result.AsyncState;
+                //ISocket socket = (ISocket)result.AsyncState;
                 int bytesSent = socket.EndSend(result);
                 Debug.WriteLine($"Sent {bytesSent} bytes to {remoteEP.Address}", "Packet I/O");
                 LastPacketSentTotalBytes = bytesSent;

@@ -138,6 +138,9 @@ namespace NetworkingLibrary.Tests
             //List<Packet> actual = testConnection.InternalWaitingPackets;
             manager.Close();
 
+            // wait for threads to exit
+            //Thread.Sleep(5 * 1000);
+
             // Assert
             Assert.AreEqual(expected, actual);
         }
