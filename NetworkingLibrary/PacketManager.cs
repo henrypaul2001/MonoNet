@@ -28,16 +28,19 @@ namespace NetworkingLibrary
 
         internal void StartReceiving(ISocket socket, NetworkManager networkManager)
         {
-            byte[] buffer = new byte[1024];
-
-            // Create new endpoint that will represent the IP address of the sender
-            EndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
-
-            socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, remoteEP, result =>
+            if (!networkManager.Closed)
             {
-                // Pass extra parameters to callback
-                ReceiveCallback(result, buffer, socket, networkManager);
-            }, socket);
+                byte[] buffer = new byte[1024];
+
+                // Create new endpoint that will represent the IP address of the sender
+                EndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
+
+                socket.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, remoteEP, result =>
+                {
+                    // Pass extra parameters to callback
+                    ReceiveCallback(result, buffer, socket, networkManager);
+                }, socket);
+            }
         }
 
         private void ReceiveCallback(IAsyncResult result, byte[] data, ISocket socket, NetworkManager networkManager)
@@ -50,6 +53,10 @@ namespace NetworkingLibrary
                 EndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
 
                 int bytesReceived = socket.EndReceiveFrom(result, ref remoteEP);
+                if (bytesReceived == -1)
+                {
+                    throw new Exception("Error reading incoming packet bytes");
+                }
 
                 IPEndPoint remoteIP = (IPEndPoint)remoteEP;
 

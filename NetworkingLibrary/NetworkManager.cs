@@ -51,6 +51,7 @@ namespace NetworkingLibrary
 
         // List representing current connections
         List<Connection> connections;
+        object connectionsLock = new object();
 
         // List representing clients in the process of establishing connection (waiting for connection acknowledgement)
         List<Client> pendingClients;
@@ -70,51 +71,33 @@ namespace NetworkingLibrary
 
         PacketManager packetManager;
 
+        Logger crashReporter;
+
+        bool closed;
+
+        public NetworkManager(ConnectionType connectionType, int protocolID, int port, float timeoutTime, string crashReportFile, LoggingMode loggingMode, LoggingFormat loggingFormat, bool americanDateFormat)
+        {
+            this.timeoutTime = timeoutTime;
+            crashReporter = new Logger(crashReportFile, loggingMode, loggingFormat, americanDateFormat);
+            Initialise(connectionType, protocolID, port);
+        }
+
         public NetworkManager(ConnectionType connectionType, int protocolID, int port, float timeoutTime)
         {
-            try
-            {
-                // Load testing assembly
-                TestAssembly = Assembly.Load("NetworkingLibraryTests4");
-            }
-            catch (Exception e)
-            {
-                Debug.WriteLine(e);
-            }
-
-            PayloadsSent = new List<string>(3);
-
-            this.connectionType = connectionType;
-            this.protocolID = protocolID;
-            this.port = port;
             this.timeoutTime = timeoutTime;
-            timeoutGracePeriod = 3;
-            packetManager = new PacketManager(this);
-
-            pendingClients = new List<Client>();
-            remoteClients = new List<Client>();
-            connections = new List<Connection>();
-            networkedObjects = new List<Networked_GameObject>();
-
-            if (this.connectionType == ConnectionType.PEER_TO_PEER)
-            {
-                string localIP = null;
-                IPHostEntry host = Dns.GetHostEntry(Dns.GetHostName());
-                foreach (IPAddress ip in host.AddressList)
-                {
-                    if (ip.AddressFamily == AddressFamily.InterNetwork)
-                    {
-                        // IP is IPv4
-                        localIP = ip.ToString();
-                        break;
-                    }
-                }
-                localClient = new Client(localIP, false, false, true, this);
-            }
+            crashReporter = new Logger("crashreport.txt", LoggingMode.APPEND, LoggingFormat.DATETIMEANDMESSAGE, false);
+            Initialise(connectionType, protocolID, port);
         }
 
         public NetworkManager(ConnectionType connectionType, int protocolID, int port)
         {
+            timeoutTime = 5;
+            crashReporter = new Logger("crashreport.txt", LoggingMode.APPEND, LoggingFormat.DATETIMEANDMESSAGE, false);
+            Initialise(connectionType, protocolID, port);
+        }
+
+        void Initialise(ConnectionType connectionType, int protocolID, int port)
+        {
             try
             {
                 // Load testing assembly
@@ -137,8 +120,9 @@ namespace NetworkingLibrary
             connections = new List<Connection>();
             networkedObjects = new List<Networked_GameObject>();
 
-            timeoutTime = 5;
             timeoutGracePeriod = 3;
+
+            closed = false;
 
             if (this.connectionType == ConnectionType.PEER_TO_PEER)
             {
@@ -174,7 +158,13 @@ namespace NetworkingLibrary
 
         public List<Connection> Connections
         {
-            get { return connections; }
+            get 
+            {
+                lock (connectionsLock)
+                {
+                    return connections;
+                }
+            }
         }
 
         public float TimeoutTime
@@ -184,8 +174,20 @@ namespace NetworkingLibrary
 
         internal List<Connection> ConnectionsInternal
         {
-            set { connections = value; }
-            get { return connections; }
+            set 
+            {
+                lock (connectionsLock)
+                {
+                    connections = value;
+                }
+            }
+            get
+            {
+                lock (connectionsLock) 
+                {
+                    return connections;
+                }
+            }
         }
 
         internal List<Client> PendingClientsInternal
@@ -225,34 +227,66 @@ namespace NetworkingLibrary
             get { return packetManager; }
         }
 
+        public Logger CrashReporter
+        {
+            get { return crashReporter; }
+        }
+
+        public bool Closed
+        {
+            get { return closed; }
+        }
+
         public void Update()
         {
-            CheckForConnectionTimeouts();
-
-            // Sync game state
-            SendGameState();
-
-            // Check all connections for lost packets
-            foreach (Connection connection in connections)
+            try
             {
-                connection.CheckForLostPackets(); 
+                CheckForConnectionTimeouts();
+
+                // Sync game state
+                SendGameState();
+
+                // Check all connections for lost packets
+                int connectionCount = connections.Count;
+                for (int i = 0; i < connectionCount; i++)
+                {
+                    if (i < connections.Count)
+                    {
+                        if (connections[i] != null)
+                        {
+                            connections[i].CheckForLostPackets();
+                        }
+                    }
+                }
+            } catch (Exception e)
+            {
+                crashReporter.Log($"IP: {LocalClient.IP} / Port: {LocalClient.Port} / ID: {LocalClient.ID} / Connections: {Connections.Count} : {e}\n");
+                Debug.WriteLine(e);
+                Close();
             }
         }
 
         internal void CheckForConnectionTimeouts()
         {
             List<Connection> timedOutConnections = new List<Connection>();
-            foreach (Connection connection in connections)
+            int connectionCount = connections.Count;
+            for (int i = 0; i < connectionCount; i++)
             {
-                if (connection.TimeAtLastPacketReceive != null)
+                if (i < connections.Count)
                 {
-                    TimeSpan timeSinceConnectionEstablished = DateTime.UtcNow.Subtract(connection.TimeAtConnectionEstablished);
-                    if (timeSinceConnectionEstablished.TotalMilliseconds >= (timeoutGracePeriod * 1000))
+                    if (connections[i] != null)
                     {
-                        TimeSpan timeSinceReceive = DateTime.UtcNow.Subtract(connection.TimeAtLastPacketReceive);
-                        if (timeSinceReceive.TotalMilliseconds >= (timeoutTime * 1000))
+                        if (connections[i].TimeAtLastPacketReceive != null)
                         {
-                            timedOutConnections.Add(connection);
+                            TimeSpan timeSinceConnectionEstablished = DateTime.UtcNow.Subtract(connections[i].TimeAtConnectionEstablished);
+                            if (timeSinceConnectionEstablished.TotalMilliseconds >= (timeoutGracePeriod * 1000))
+                            {
+                                TimeSpan timeSinceReceive = DateTime.UtcNow.Subtract(connections[i].TimeAtLastPacketReceive);
+                                if (timeSinceReceive.TotalMilliseconds >= (timeoutTime * 1000))
+                                {
+                                    timedOutConnections.Add(connections[i]);
+                                }
+                            }
                         }
                     }
                 }
@@ -943,6 +977,7 @@ namespace NetworkingLibrary
 
         public void Close()
         {
+            closed = true;
             DisconnectLocalClient();
             localClient.Close();
             networkedObjects = null;

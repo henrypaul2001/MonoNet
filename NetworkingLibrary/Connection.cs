@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NetworkingLibrary
@@ -117,6 +118,8 @@ namespace NetworkingLibrary
         int remoteSequence;
         int localSequence;
 
+        int processBitfieldThreads;
+
         public Connection(Client localClient, Client remoteClient, float packetTimeoutTime)
         {
             diagnostics = new Diagnostics(10);
@@ -146,6 +149,9 @@ namespace NetworkingLibrary
             timeAtConnectionEstablished = DateTime.UtcNow;
 
             waitingListLock = new object();
+
+            int processBitfieldThreads = 12;
+            ThreadPool.SetMinThreads(processBitfieldThreads, processBitfieldThreads);
         }
 
         public Diagnostics DiagnosticInfo
@@ -243,32 +249,6 @@ namespace NetworkingLibrary
 
         internal void CheckForLostPackets()
         {
-            /*
-            List<Packet> packetsToRemove = new List<Packet>();
-            foreach (Packet packet in waitingPackets)
-            {
-                TimeSpan elapsedTime = DateTime.UtcNow.Subtract(packet.SendTime);
-                if (elapsedTime.TotalMilliseconds >= (packetTimeoutTime * 1000))
-                {
-                    // Packet is lost
-                    Debug.WriteLine($"Packet lost: sequence number={packet.Sequence} time sent={packet.SendTime}", "Packet Loss");
-                    packetsToRemove.Add(packet);
-                    packet.PacketLost = true;
-                    lostPackets.Add(packet);
-                    diagnostics.PacketsLost++;
-                }
-            }
-
-            // Remove lost packets from waiting list
-            for (int i = 0; i < packetsToRemove.Count; i++)
-            {
-                Packet removedPacket;
-                waitingPackets.
-                waitingPackets.Remove(packetsToRemove[i]);
-            }
-            */
-
-            
             List<int> keysToRemove = new List<int>();
             // lock
             lock (waitingListLock)
@@ -300,7 +280,13 @@ namespace NetworkingLibrary
         {
             lock (waitingListLock)
             {
-                packetsWaitingForAck.Add(packet.Sequence, packet);
+                try
+                {
+                    packetsWaitingForAck.Add(packet.Sequence, packet);
+                } catch (Exception e)
+                {
+                    Debug.WriteLine(e, "Packet I/O");
+                }
                 //waitingPackets.Add(packet);
             }
         }
@@ -346,6 +332,7 @@ namespace NetworkingLibrary
                     if (ack - i >= 0)
                     {
                         Task.Run(() => PacketAcknowledged(ack - i));
+                        //ThreadPool.QueueUserWorkItem(_ => PacketAcknowledged(ack - i));
                     }
                     else
                     {
@@ -390,15 +377,6 @@ namespace NetworkingLibrary
 
             float rtt = (float)(timeNow - acknowledgedPacket.SendTime).TotalMilliseconds;
             diagnostics.UpdateRTT(rtt);
-            
-            /*
-            if (acknowledgedPacket != null)
-            {
-                
-                //waitingPackets.Remove(acknowledgedPacket);
-                diagnostics.UpdateRTT(rtt);
-            }
-            */
         }
 
         internal int GetPacketsLostInBuffer()

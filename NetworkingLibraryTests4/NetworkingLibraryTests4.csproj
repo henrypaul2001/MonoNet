@@ -73,6 +73,7 @@
   <ItemGroup>
     <Compile Include="ConnectionEstablishmentTests.cs" />
     <Compile Include="DiagnosticsTests.cs" />
+    <Compile Include="LoggerTests.cs" />
     <Compile Include="NetworkManagerTests.cs" />
     <Compile Include="PacketManagerTests.cs" />
     <Compile Include="ConnectionTests.cs" />

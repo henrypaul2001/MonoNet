@@ -19,8 +19,8 @@ namespace NetworkingLibrary.Tests
         {
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
-            var mockSocket = new Mock<SocketWrapper>(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            var mockSenderSocket = new Mock<SocketWrapper>(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            var mockSocket = new Mock<SocketWrapper>(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp, manager);
+            var mockSenderSocket = new Mock<SocketWrapper>(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp, manager);
 
             string testString = "roguepacketdata/";
 
@@ -67,8 +67,8 @@ namespace NetworkingLibrary.Tests
         {
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
-            var mockSocket = new Mock<SocketWrapper>(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            var mockSenderSocket = new Mock<SocketWrapper>(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            var mockSocket = new Mock<SocketWrapper>(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp, manager);
+            var mockSenderSocket = new Mock<SocketWrapper>(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp, manager);
 
             string testString = "roguepacketdata/";
 
@@ -95,22 +95,27 @@ namespace NetworkingLibrary.Tests
 
             testString = $"0/25/REQUEST/{manager.LocalClient.ID}/{manager.LocalClient.IsHost}/{manager.LocalClient.IsServer}";
 
+            int loops = 0;
             // Setup mock
             testBuffer = new byte[1024];
             mockSocket.Setup(s => s.BeginReceiveFrom(testBuffer, 0, testBuffer.Length, SocketFlags.None, It.IsAny<EndPoint>(), It.IsAny<AsyncCallback>(), It.IsAny<object>()))
                 .Callback<byte[], int, int, SocketFlags, EndPoint, AsyncCallback, object>((buffer, offset, size, flags, ep, callback, state) =>
                 {
-                    // Setup mock async result
-                    var mockResult = new Mock<IAsyncResult>();
-                    mockResult.SetupGet(r => r.CompletedSynchronously).Returns(true);
-                    mockResult.Setup(r => r.AsyncState).Returns(mockSenderSocket.Object);
+                    loops++;
+                    if (loops <= 1)
+                    {
+                        // Setup mock async result
+                        var mockResult = new Mock<IAsyncResult>();
+                        mockResult.SetupGet(r => r.CompletedSynchronously).Returns(true);
+                        mockResult.Setup(r => r.AsyncState).Returns(mockSenderSocket.Object);
 
-                    // Simulate data receive
-                    byte[] testData = Encoding.ASCII.GetBytes(testString);
-                    Array.Copy(testData, 0, buffer, offset, testData.Length);
+                        // Simulate data receive
+                        byte[] testData = Encoding.ASCII.GetBytes(testString);
+                        Array.Copy(testData, 0, buffer, offset, testData.Length);
 
-                    // Invoke socket callback with mocked IAsyncResult object
-                    callback.Invoke(mockResult.Object);
+                        // Invoke socket callback with mocked IAsyncResult object
+                        callback.Invoke(mockResult.Object);
+                    }
                 });
 
             manager.PacketManager.StartReceiving(mockSocket.Object, manager);
@@ -147,7 +152,7 @@ namespace NetworkingLibrary.Tests
         {
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
-            var mockSocket = new Mock<SocketWrapper>(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            var mockSocket = new Mock<SocketWrapper>(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp, manager);
 
             string testString = "SendTestData";
             byte[] testData = Encoding.ASCII.GetBytes(testString);

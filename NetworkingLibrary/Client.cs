@@ -43,7 +43,7 @@ namespace NetworkingLibrary
 
             if (isLocalClient)
             {
-                socket = new SocketWrapper(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                socket = new SocketWrapper(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp, networkManager);
 
                 // Socket will listen to packets from all IP addresses
                 socket.Bind(new IPEndPoint(IPAddress.Any, port));
@@ -155,7 +155,7 @@ namespace NetworkingLibrary
             {
                 connectionNum = otherClients.Count;
             }
-             string payload = ($"0/{protocolID}/ACCEPT/id={id}/isHost={isHost}/isServer={isServer}/connectionNum={connectionNum}");
+            string payload = ($"0/{protocolID}/ACCEPT/id={id}/isHost={isHost}/isServer={isServer}/connectionNum={connectionNum}");
 
             for (int i = 0; i < connectionNum; i++)
             {

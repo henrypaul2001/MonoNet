@@ -12,10 +12,12 @@ namespace NetworkingLibrary
     internal class SocketWrapper : ISocket
     {
         private Socket socket;
+        private NetworkManager manager;
 
-        internal SocketWrapper(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
+        internal SocketWrapper(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, NetworkManager manager)
         {
             socket = new Socket(addressFamily, socketType, protocolType);
+            this.manager = manager;
         }
 
         public Socket Socket
@@ -31,7 +33,7 @@ namespace NetworkingLibrary
             }
             catch (Exception e) 
             {
-                Debug.WriteLine(e);
+                manager.CrashReporter.Log($"IP: {manager.LocalClient.IP} / Port: {manager.LocalClient.Port} / ID: {manager.LocalClient.ID} / Connections: {manager.Connections.Count} : {e}");
                 return null;
             }
         }
@@ -58,7 +60,6 @@ namespace NetworkingLibrary
                 return Socket.EndReceiveFrom(asyncResult, ref endPoint);
             } catch (Exception e) 
             {
-                Debug.WriteLine(e);
                 return -1;
             }
         }
