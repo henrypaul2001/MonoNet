@@ -19,7 +19,7 @@ namespace NetworkingLibrary.Tests
         {
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
-            string expected = $"0/25/REQUEST/id={manager.LocalClient.ID}/isHost={manager.LocalClient.IsHost}/isServer={manager.LocalClient.IsServer}";
+            string expected = $"0/25/REQUEST/id={manager.LocalClient.ID}";
 
             // Act
             manager.ConnectLocalClientToHost("100.100.2.3", 27000);
@@ -44,14 +44,14 @@ namespace NetworkingLibrary.Tests
             List<Client> pendingClients = manager.PendingClients;
 
             // Add decoy client
-            pendingClients.Add(new Client("125.125.3.6", 28000, true, false, 567, manager));
+            pendingClients.Add(new Client("125.125.3.6", 28000, 567, manager));
 
             manager.Close();
 
             // Assert
             foreach (Client client in pendingClients)
             {
-                if (client.ID == 123 && client.IsHost == false && client.IsServer == false) {
+                if (client.ID == 123) {
                     Assert.Pass();
                 }
                 else
@@ -68,11 +68,11 @@ namespace NetworkingLibrary.Tests
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 28000);
             List<Client> pendingClients = new List<Client>();
-            Client pendingClient = new Client("123.123.1.2", 27000, true, false, 567, manager);
+            Client pendingClient = new Client("123.123.1.2", 27000, 567, manager);
             pendingClients.Add(pendingClient);
             manager.PendingClientsInternal = pendingClients;
 
-            byte[] data = Encoding.ASCII.GetBytes($"0/25/ACCEPT/id=567/isHost=true/isServer=false/connectionNum=0/END");
+            byte[] data = Encoding.ASCII.GetBytes($"0/25/ACCEPT/id=567/yourID=100/connectionNum=0/END");
             Packet acceptPacket = new Packet("123.125.5.5", pendingClients[0].IP, 28000, data, PacketType.ACCEPT);
 
             // Act
@@ -90,7 +90,7 @@ namespace NetworkingLibrary.Tests
             // Check if client has been removed from pending list
             foreach (Client client in pendingClients)
             {
-                if (client.ID == pendingClient.ID && client.IsHost == pendingClient.IsHost && client.IsServer == pendingClient.IsServer)
+                if (client.ID == pendingClient.ID)
                 {
                     removedFromPending = false;
                 }
@@ -98,7 +98,7 @@ namespace NetworkingLibrary.Tests
             // Check if client has been added to remote list
             foreach (Client client in remoteClients)
             {
-                if (client.ID == pendingClient.ID && client.IsHost == pendingClient.IsHost && client.IsServer == pendingClient.IsServer)
+                if (client.ID == pendingClient.ID)
                 {
                     addedToRemote = true;
                 }
@@ -125,7 +125,7 @@ namespace NetworkingLibrary.Tests
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 28000);
             List<Client> pendingClients = new List<Client>();
-            Client pendingClient = new Client("123.123.1.2", 27000, true, false, 567, manager);
+            Client pendingClient = new Client("123.123.1.2", 27000, 567, manager);
             pendingClients.Add(pendingClient);
             manager.PendingClientsInternal = pendingClients;
 
@@ -133,7 +133,7 @@ namespace NetworkingLibrary.Tests
             string connection2IP = "200.200.6.3";
             int connection1Port = 28500;
             int connection2Port = 28875;
-            byte[] data = Encoding.ASCII.GetBytes($"0/25/ACCEPT/id=567/isHost=true/isServer=false/connectionNum=2/connection1IP={connection1IP}/connection2Port={connection1Port}/connection2IP={connection2IP}/connection2Port={connection2Port}/END");
+            byte[] data = Encoding.ASCII.GetBytes($"0/25/ACCEPT/id=567/yourID=100/connectionNum=2/connection1IP={connection1IP}/connection2Port={connection1Port}/connection2IP={connection2IP}/connection2Port={connection2Port}/END");
             Packet acceptPacket = new Packet("123.125.5.5", pendingClients[0].IP, 28000, data, PacketType.ACCEPT);
 
             // Act
@@ -148,7 +148,7 @@ namespace NetworkingLibrary.Tests
             // Check if initial client has been removed from pending list
             foreach (Client client in pendingClients)
             {
-                if (client.ID == pendingClient.ID && client.IsHost == pendingClient.IsHost && client.IsServer == pendingClient.IsServer)
+                if (client.ID == pendingClient.ID)
                 {
                     initialClientRemovedFromPending = false;
                 }
@@ -156,7 +156,7 @@ namespace NetworkingLibrary.Tests
             // Check if initial client has been added to remote list
             foreach (Client client in remoteClients)
             {
-                if (client.ID == pendingClient.ID && client.IsHost == pendingClient.IsHost && client.IsServer == pendingClient.IsServer)
+                if (client.ID == pendingClient.ID)
                 {
                     initialClientAddedToRemote = true;
                 }
@@ -211,7 +211,7 @@ namespace NetworkingLibrary.Tests
             string packetSourceIP = "155.155.2.3";
             int sourceClientID = 567;
 
-            byte[] data = Encoding.ASCII.GetBytes($"0/25/ACCEPT/id={sourceClientID}/isHost=true/isServer=false/connectionNum=0/END");
+            byte[] data = Encoding.ASCII.GetBytes($"0/25/ACCEPT/id={sourceClientID}/yourID=100/connectionNum=0/END");
             Packet acceptPacket = new Packet("123.125.5.5", packetSourceIP, 28000, data, PacketType.ACCEPT);
 
             // Act
@@ -266,7 +266,7 @@ namespace NetworkingLibrary.Tests
             int connection1Port = 28500;
             int connection2Port = 28875;
 
-            byte[] data = Encoding.ASCII.GetBytes($"0/25/ACCEPT/id={sourceClientID}/isHost=true/isServer=false/connectionNum=2/connection1IP={connection1IP}/connection1Port={connection1Port}/connection2IP={connection2IP}/connection2Port={connection2Port}/END");
+            byte[] data = Encoding.ASCII.GetBytes($"0/25/ACCEPT/id={sourceClientID}/yourID=100/connectionNum=2/connection1IP={connection1IP}/connection1Port={connection1Port}/connection2IP={connection2IP}/connection2Port={connection2Port}/END");
             Packet acceptPacket = new Packet("123.125.5.5", packetSourceIP, 28000, data, PacketType.ACCEPT);
 
             // Act

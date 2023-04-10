@@ -93,7 +93,7 @@ namespace NetworkingLibrary.Tests
             // Act
             manager.PacketManager.StartReceiving(mockSocket.Object, manager);
 
-            testString = $"0/25/REQUEST/{manager.LocalClient.ID}/{manager.LocalClient.IsHost}/{manager.LocalClient.IsServer}";
+            testString = $"0/25/REQUEST/{manager.LocalClient.ID}";
 
             int loops = 0;
             // Setup mock
@@ -200,7 +200,7 @@ namespace NetworkingLibrary.Tests
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
 
-            string testString = $"0/25/REQUEST/{manager.LocalClient.ID}/{manager.LocalClient.IsHost}/{manager.LocalClient.IsServer}";
+            string testString = $"0/25/REQUEST/{manager.LocalClient.ID}";
             byte[] testData = Encoding.ASCII.GetBytes(testString);
 
             // Act
@@ -226,7 +226,7 @@ namespace NetworkingLibrary.Tests
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
 
-            string testString = $"0/25/ACCEPT/{manager.LocalClient.ID}/{manager.LocalClient.IsHost}/{manager.LocalClient.IsServer}/0";
+            string testString = $"0/25/ACCEPT/{manager.LocalClient.ID}/yourID=100/0";
             byte[] testData = Encoding.ASCII.GetBytes(testString);
 
             // Act
@@ -256,7 +256,7 @@ namespace NetworkingLibrary.Tests
 
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
 
-            Client fakeRemoteClient = new Client(destinationIP, destinationPort, false, false, clientID, manager);
+            Client fakeRemoteClient = new Client(destinationIP, destinationPort, clientID, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient);
             Connection fakeConnection = new Connection(manager.LocalClient, fakeRemoteClient, 5);
             manager.ConnectionsInternal.Add(fakeConnection);
@@ -292,7 +292,7 @@ namespace NetworkingLibrary.Tests
 
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
 
-            Client fakeRemoteClient = new Client(destinationIP, destinationPort, false, false, clientID, manager);
+            Client fakeRemoteClient = new Client(destinationIP, destinationPort, clientID, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient);
             Connection fakeConnection = new Connection(manager.LocalClient, fakeRemoteClient, 5);
             manager.ConnectionsInternal.Add(fakeConnection);

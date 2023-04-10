@@ -27,7 +27,7 @@ namespace NetworkingLibrary.Tests
 
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000, 1000000);
 
-            Client fakeRemoteClient = new Client(sourceIP, sourcePort, false, false, clientID, manager);
+            Client fakeRemoteClient = new Client(sourceIP, sourcePort, clientID, manager);
 
             manager.RemoteClientsInternal.Add(fakeRemoteClient);
 
@@ -118,7 +118,7 @@ namespace NetworkingLibrary.Tests
 
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000, 1000000);
 
-            Client fakeRemoteClient = new Client(sourceIP, sourcePort, false, false, clientID, manager);
+            Client fakeRemoteClient = new Client(sourceIP, sourcePort, clientID, manager);
 
             manager.RemoteClientsInternal.Add(fakeRemoteClient);
 
@@ -163,7 +163,7 @@ namespace NetworkingLibrary.Tests
 
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000, 1000000);
 
-            Client fakeRemoteClient = new Client(sourceIP, sourcePort, false, false, clientID, manager);
+            Client fakeRemoteClient = new Client(sourceIP, sourcePort, clientID, manager);
 
             manager.RemoteClientsInternal.Add(fakeRemoteClient);
 
@@ -232,9 +232,9 @@ namespace NetworkingLibrary.Tests
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000, 1000000);
 
-            Client fakeRemoteClient1 = new Client("111.111.1.1", 27000, false, false, 111, manager);
+            Client fakeRemoteClient1 = new Client("111.111.1.1", 27000, 111, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient1);
-            Client fakeRemoteClient2 = new Client("222.222.2.2", 28000, false, false, 222, manager);
+            Client fakeRemoteClient2 = new Client("222.222.2.2", 28000, 222, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient2);
 
             Connection fakeConnection1 = new Connection(manager.LocalClient, fakeRemoteClient1, 5);

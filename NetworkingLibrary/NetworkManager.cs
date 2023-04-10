@@ -137,7 +137,7 @@ namespace NetworkingLibrary
                         break;
                     }
                 }
-                localClient = new Client(localIP, false, false, true, this);
+                localClient = new Client(localIP, this);
             }
         }
 
@@ -423,6 +423,19 @@ namespace NetworkingLibrary
                     CreateAndSendSyncOrConstructPacket(PacketType.SYNC, payload, "ALL", -1);
                 }
             }
+        }
+
+        internal int GenerateClientID(List<int> excludedIDs)
+        {
+            int id;
+            Random rnd = new Random();
+
+            do
+            {
+                id = rnd.Next(100, 201);
+            } while (excludedIDs.Contains(id));
+
+            return id;
         }
 
         internal void CreateAndSendSyncOrConstructPacket(PacketType packetType, string payload, string destinationIP, int destinationPort)
@@ -721,7 +734,7 @@ namespace NetworkingLibrary
             }
 
             // Remove client from connections
-            List<int> clientIDs = GetClientIDs();
+            List<int> clientIDs = GetClientIDs(false);
 
             if (clientIDs.Contains(remoteID))
             {
@@ -758,32 +771,21 @@ namespace NetworkingLibrary
             int remoteID;
             bool parseRemoteID = int.TryParse(split[3].Substring(split[3].IndexOf('=') + 1), out remoteID);
             if (!parseRemoteID) {
-                Debug.WriteLine("Error parsing remoteID, id set to 1000");
-                remoteID = 1000;
+                throw new Exception("Error parsing remote ID");
             }
 
-            bool remoteIsHost;
-            bool parseHostBool = bool.TryParse(split[4].Substring(split[4].IndexOf('=') + 1), out remoteIsHost);
-            if (!parseHostBool)
+            if (remoteID == -1)
             {
-                Debug.WriteLine("Error parsing remoteIsHost, value set to false");
-                remoteIsHost = false;
+                // Then this is the first connection the requesting client is making, as they do not yet have a client ID
+                remoteID = GenerateClientID(GetClientIDs(true));
             }
 
-            bool remoteIsServer;
-            bool parseServerBool = bool.TryParse(split[5].Substring(split[5].IndexOf('=') + 1), out remoteIsServer);
-            if (!parseServerBool)
-            {
-                Debug.WriteLine("Error parsing remoteIsServer, value set to false");
-                remoteIsServer = false;
-            }
-
-            Client remoteClient = new Client(connectionPacket.IPSource, connectionPacket.PortSource, remoteIsHost, remoteIsServer, remoteID, this);
+            Client remoteClient = new Client(connectionPacket.IPSource, connectionPacket.PortSource, remoteID, this);
             
             pendingClients.Add(remoteClient);
 
             // Send connection accept to remote client
-            localClient.AcceptConnection(connectionPacket);
+            localClient.AcceptConnection(connectionPacket, remoteID);
         }
 
         public virtual void HandleConnectionAccept(Packet acceptPacket)
@@ -797,41 +799,32 @@ namespace NetworkingLibrary
             bool parseRemoteID = int.TryParse(split[3].Substring(split[3].IndexOf('=') + 1), out remoteID);
             if (!parseRemoteID)
             {
-                Debug.WriteLine("Error parsing remoteID, id set to 1000");
-                remoteID = 1000;
+                throw new Exception("Error parsing remote ID");
             }
 
-            bool remoteIsHost;
-            bool parseHostBool = bool.TryParse(split[4].Substring(split[4].IndexOf('=') + 1), out remoteIsHost);
-            if (!parseHostBool)
+            int yourID;
+            bool parseYourID = int.TryParse(split[4].Substring(split[4].IndexOf('=') + 1), out yourID);
+            if (!parseYourID)
             {
-                Debug.WriteLine("Error parsing remoteIsHost, value set to false");
-                remoteIsHost = false;
-            }
-
-            bool remoteIsServer;
-            bool parseServerBool = bool.TryParse(split[5].Substring(split[5].IndexOf('=') + 1), out remoteIsServer);
-            if (!parseServerBool)
-            {
-                Debug.WriteLine("Error parsing remoteIsServer, value set to false");
-                remoteIsServer = false;
+                throw new Exception("Error parsing remote ID");
             }
 
             int remoteConnectionsNum;
-            bool parseConnectionsNum = int.TryParse(split[6].Substring(split[6].IndexOf('=') + 1), out remoteConnectionsNum);
+            bool parseConnectionsNum = int.TryParse(split[5].Substring(split[5].IndexOf('=') + 1), out remoteConnectionsNum);
             if (!parseConnectionsNum)
             {
-                Debug.WriteLine("Error parsing remoteConnectionsNum, value set to 0");
-                remoteConnectionsNum = 0;
+                throw new Exception("Error parsing remote connections number");
             }
+
+            localClient.InternalID = yourID;
 
             // Connect to any additional peers
             List<string> currentConnectionAddresses = GetConnectedAddresses();
             List<string> pendingConnectionAddresses = GetPendingAddresses();
             for (int i = 0; i < remoteConnectionsNum * 2; i += 2)
             {
-                string remoteIP = split[7 + i].Substring(split[7 + i].IndexOf("=") + 1);
-                string remotePort = split[7 + i + 1].Substring(split[7 + i + 1].IndexOf("=") + 1);
+                string remoteIP = split[6 + i].Substring(split[6 + i].IndexOf("=") + 1);
+                string remotePort = split[6 + i + 1].Substring(split[6 + i + 1].IndexOf("=") + 1);
                 if (!pendingConnectionAddresses.Contains(remoteIP) && !currentConnectionAddresses.Contains(remoteIP) && int.Parse(remotePort) != localClient.Port)
                 {
                     localClient.RequestConnection(remoteIP, int.Parse(remotePort));
@@ -876,7 +869,7 @@ namespace NetworkingLibrary
                 // If false, the current code path is being run on the client that sent the initial connection request
                 
                 // Create remote client
-                Client remoteClient = new Client(acceptPacket.IPSource, acceptPacket.PortSource, remoteIsHost, remoteIsServer, remoteID, this);
+                Client remoteClient = new Client(acceptPacket.IPSource, acceptPacket.PortSource, remoteID, this);
                 remoteClients.Add(remoteClient);
 
                 // Create connection
@@ -886,7 +879,7 @@ namespace NetworkingLibrary
                 ConnectionEstablished(connection);
 
                 // Send connection accept back to remote client
-                localClient.AcceptConnection(acceptPacket);
+                localClient.AcceptConnection(acceptPacket, remoteID);
             }
         }
 
@@ -917,7 +910,7 @@ namespace NetworkingLibrary
             }
         }
 
-        public List<int> GetClientIDs()
+        public List<int> GetClientIDs(bool includeLocal)
         {
             // Get all client IDs
             List<int> clientIDs = new List<int>();
@@ -931,6 +924,10 @@ namespace NetworkingLibrary
                     }
 
                 }
+            }
+            if (includeLocal)
+            {
+                clientIDs.Add(localClient.ID);
             }
             return clientIDs;
         }

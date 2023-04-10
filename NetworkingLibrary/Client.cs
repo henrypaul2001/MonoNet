@@ -20,7 +20,7 @@ namespace NetworkingLibrary
 
         int id;
         int port;
-        int protocolID;
+        //int protocolID;
 
         //List<Connection> connections;
         SocketWrapper socket;
@@ -29,50 +29,50 @@ namespace NetworkingLibrary
 
         string ip;
 
-        bool isHost;
-        bool isServer;
+        //bool isHost;
+        //bool isServer;
 
         // NOTE FOR SILLY DUMB LITTLE STUDENT TO SELF... MAKE A LOCALCLIENT CLASS THAT DERIVES FROM THIS CLIENT CLASS YOU WILL APPRECIATE THIS MESSAGE YOU LEFT FOR YOURSELF WHEN YOU FORGET THAT YOU WERE GONNA DO THAT
-        public Client(string ip, bool isHost, bool isServer, bool isLocalClient, NetworkManager networkManager)
+        // Local client constructor
+        internal Client(string ip, NetworkManager networkManager)
         {
             this.networkManager = networkManager;
-            List<Client> otherClients = networkManager.RemoteClients;
+            //List<Client> otherClients = networkManager.RemoteClients;
 
             port = networkManager.Port;
-            protocolID = networkManager.ProtocolID;
+            //protocolID = networkManager.ProtocolID;
+            
+            // If local client
+            socket = new SocketWrapper(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp, networkManager);
 
-            if (isLocalClient)
-            {
-                socket = new SocketWrapper(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp, networkManager);
+            // Socket will listen to packets from all IP addresses
+            socket.Bind(new IPEndPoint(IPAddress.Any, port));
 
-                // Socket will listen to packets from all IP addresses
-                socket.Bind(new IPEndPoint(IPAddress.Any, port));
+            //List<int> clientIDs = networkManager.GetClientIDs();
 
-                List<int> clientIDs = networkManager.GetClientIDs();
-
-                // Generate unique ID for client
-                id = GenerateClientID(clientIDs);
-            }
-
-            this.isServer = isServer;
-            this.ip = ip;
-            this.isHost = isHost;
-
-            //connections = new List<Connection>();
+            // Generate unique ID for client
+            //id = GenerateClientID(clientIDs);
+            id = -1;
 
             networkManager.PacketManager.StartReceiving(socket, networkManager);
+            //end if
+
+            //this.isServer = isServer;
+            this.ip = ip;
+            //this.isHost = isHost;
         }
 
-        public Client(string ip, int port, bool isHost, bool isServer, int id, NetworkManager networkManager)
+        // Remote client constructor
+        internal Client(string ip, int port, int id, NetworkManager networkManager)
         {
             this.networkManager = networkManager;
-            List<Client> otherClients = networkManager.RemoteClients;
+            //List<Client> otherClients = networkManager.RemoteClients;
 
-            protocolID = networkManager.ProtocolID;
+            //protocolID = networkManager.ProtocolID;
 
-            this.isServer = isServer;
+            //this.isServer = isServer;
             this.ip = ip;
-            this.isHost = isHost;
+            //this.isHost = isHost;
             this.id = id;
             this.port = port;
 
@@ -82,6 +82,12 @@ namespace NetworkingLibrary
         internal ref SocketWrapper Socket
         {
             get { return ref socket; }
+        }
+
+        internal int InternalID
+        {
+            get { return id; }
+            set { id = value; }
         }
 
         public int ID
@@ -101,48 +107,23 @@ namespace NetworkingLibrary
             get { return ip; }
         }
 
-        public bool IsHost
-        {
-            get { return isHost; }
-            set { isHost = value; }
-        }
-
-        public bool IsServer
-        {
-            get { return isServer; }
-            set { isServer = value; }
-        }
-
         public int Port
         {
             get { return port; }
-        }
-
-        int GenerateClientID(List<int> excludedIDs)
-        {
-            int id;
-            Random rnd = new Random();
-
-            do
-            {
-                id = rnd.Next(100, 201);
-            } while (excludedIDs.Contains(id));
-
-            return id;
         }
 
         internal byte[] RequestConnection(string ip, int portDestination)
         {
             requestConnectionCalls++;
             IPsConnectionRequestSentTo.Add(ip);
-            byte[] data = Encoding.ASCII.GetBytes($"0/{protocolID}/REQUEST/id={id}/isHost={isHost}/isServer={isServer}");
+            byte[] data = Encoding.ASCII.GetBytes($"0/{networkManager.ProtocolID}/REQUEST/id={id}");
             Packet connectionPacket = new Packet(ip, this.ip, portDestination, data, PacketType.REQUEST);
             networkManager.PacketManager.SendPacket(connectionPacket, socket);
             //networkManager.PacketManager.StartReceiving(ref socket, networkManager);
             return data;
         }
 
-        internal void AcceptConnection(Packet connectionPacket)
+        internal void AcceptConnection(Packet connectionPacket, int remoteClientID)
         {
             acceptConnectionCalls++;
 
@@ -155,7 +136,14 @@ namespace NetworkingLibrary
             {
                 connectionNum = otherClients.Count;
             }
-            string payload = ($"0/{protocolID}/ACCEPT/id={id}/isHost={isHost}/isServer={isServer}/connectionNum={connectionNum}");
+
+            // If there are no existing connections, generate a client ID for this client
+            if (connectionNum == 0)
+            {
+                id = networkManager.GenerateClientID(new List<int> { remoteClientID });
+            }
+
+            string payload = ($"0/{networkManager.ProtocolID}/ACCEPT/id={id}/yourID={remoteClientID}/connectionNum={connectionNum}");
 
             for (int i = 0; i < connectionNum; i++)
             {

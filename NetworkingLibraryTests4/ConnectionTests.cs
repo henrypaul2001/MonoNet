@@ -22,7 +22,7 @@ namespace NetworkingLibrary.Tests
         {
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
-            Client remoteClient = new Client("123.123.2.2", 28000, false, false, 123, manager);
+            Client remoteClient = new Client("123.123.2.2", 28000, 123, manager);
             Connection testConnection = new Connection(manager.LocalClient, remoteClient, 5);
 
             // All 32 packets before most recent packet have been 'received'
@@ -54,7 +54,7 @@ namespace NetworkingLibrary.Tests
         {
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
-            Client remoteClient = new Client("123.123.2.2", 28000, false, false, 123, manager);
+            Client remoteClient = new Client("123.123.2.2", 28000, 123, manager);
             Connection testConnection = new Connection(manager.LocalClient, remoteClient, 5);
 
             // All 32 packets before remote sequence have been received - apart from RemoteSequence-14, -15, -24 and -25
@@ -93,7 +93,7 @@ namespace NetworkingLibrary.Tests
         {
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
-            Client remoteClient = new Client("123.123.2.2", 28000, false, false, 123, manager);
+            Client remoteClient = new Client("123.123.2.2", 28000, 123, manager);
             Connection testConnection = new Connection(manager.LocalClient, remoteClient, 5);
 
             // Create packets and pass to test connection to simulate the sending of packets
@@ -152,7 +152,7 @@ namespace NetworkingLibrary.Tests
             int packetTimeoutTime = 5; // in seconds
 
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
-            Client remoteClient = new Client("123.123.2.2", 28000, false, false, 123, manager);
+            Client remoteClient = new Client("123.123.2.2", 28000, 123, manager);
             Connection testConnection = new Connection(manager.LocalClient, remoteClient, packetTimeoutTime);
 
             for (int i = 0; i < 10; i++)
@@ -191,7 +191,7 @@ namespace NetworkingLibrary.Tests
             int packetTimeoutTime = 5; // in seconds
 
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
-            Client remoteClient = new Client("123.123.2.2", 28000, false, false, 123, manager);
+            Client remoteClient = new Client("123.123.2.2", 28000, 123, manager);
             Connection testConnection = new Connection(manager.LocalClient, remoteClient, packetTimeoutTime);
 
             for (int i = 0; i < 10; i++)

@@ -25,7 +25,7 @@ namespace NetworkingLibrary.Tests
             TestNetworkedObject localObject2 = new TestNetworkedObject(manager, 25, new Dictionary<string, string>() { { "test2", "test2Value" }, { "otherTest2", "otherTest2Value"} });
             TestNetworkedObject localObject3 = new TestNetworkedObject(manager, 25, new Dictionary<string, string>() { { "test3", "test3Value" } });
 
-            Client fakeRemoteClient = new Client(destinationIP, destinationPort, false, false, clientID, manager);
+            Client fakeRemoteClient = new Client(destinationIP, destinationPort, clientID, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient);
 
             Connection fakeConnection = new Connection(manager.LocalClient, fakeRemoteClient, 5);
@@ -74,7 +74,7 @@ namespace NetworkingLibrary.Tests
         {
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000, 5);
-            Client fakeRemoteClient = new Client("125.125.1.1", 27000, false, false, 111, manager);
+            Client fakeRemoteClient = new Client("125.125.1.1", 27000, 111, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient);
 
             Connection fakeConnection = new Connection(manager.LocalClient, fakeRemoteClient, 5);
@@ -114,7 +114,7 @@ namespace NetworkingLibrary.Tests
         {
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000, 5);
-            Client fakeRemoteClient = new Client("125.125.1.1", 27000, false, false, 111, manager);
+            Client fakeRemoteClient = new Client("125.125.1.1", 27000, 111, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient);
 
             Connection fakeConnection = new Connection(manager.LocalClient, fakeRemoteClient, 5);
@@ -155,9 +155,9 @@ namespace NetworkingLibrary.Tests
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
 
-            Client fakeRemoteClient1 = new Client("125.125.1.1", 27000, false, false, 111, manager);
+            Client fakeRemoteClient1 = new Client("125.125.1.1", 27000, 111, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient1);
-            Client fakeRemoteClient2 = new Client("122.122.2.2", 27000, false, false, 222, manager);
+            Client fakeRemoteClient2 = new Client("122.122.2.2", 27000, 222, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient2);
 
             Connection fakeConnection1 = new Connection(manager.LocalClient, fakeRemoteClient1, 5);
@@ -199,17 +199,17 @@ namespace NetworkingLibrary.Tests
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
 
-            Client fakeRemoteClient1 = new Client("125.125.1.1", 27000, false, false, 111, manager);
+            Client fakeRemoteClient1 = new Client("125.125.1.1", 27000, 111, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient1);
-            Client fakeRemoteClient2 = new Client("122.122.2.2", 27000, false, false, 222, manager);
+            Client fakeRemoteClient2 = new Client("122.122.2.2", 27000, 222, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient2);
-            Client fakeRemoteClient3 = new Client("133.133.3.3", 28000, false, false, 333, manager);
+            Client fakeRemoteClient3 = new Client("133.133.3.3", 28000, 333, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient3);
 
             List<int> expected = new List<int> { 111, 222, 333 };
 
             // Act
-            List<int> actual = manager.GetClientIDs();
+            List<int> actual = manager.GetClientIDs(false);
             manager.Close();
 
             // Assert
@@ -222,11 +222,11 @@ namespace NetworkingLibrary.Tests
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
 
-            Client fakeRemoteClient1 = new Client("125.125.1.1", 27000, false, false, 111, manager);
+            Client fakeRemoteClient1 = new Client("125.125.1.1", 27000, 111, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient1);
-            Client fakeRemoteClient2 = new Client("122.122.2.2", 27000, false, false, 222, manager);
+            Client fakeRemoteClient2 = new Client("122.122.2.2", 27000, 222, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient2);
-            Client fakeRemoteClient3 = new Client("133.133.3.3", 28000, false, false, 333, manager);
+            Client fakeRemoteClient3 = new Client("133.133.3.3", 28000, 333, manager);
             manager.RemoteClientsInternal.Add(fakeRemoteClient3);
 
             Connection fakeConnection1 = new Connection(manager.LocalClient, fakeRemoteClient1, 5);
@@ -252,11 +252,11 @@ namespace NetworkingLibrary.Tests
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
 
-            Client fakeRemoteClient1 = new Client("125.125.1.1", 27000, false, false, 111, manager);
+            Client fakeRemoteClient1 = new Client("125.125.1.1", 27000, 111, manager);
             manager.PendingClientsInternal.Add(fakeRemoteClient1);
-            Client fakeRemoteClient2 = new Client("122.122.2.2", 27000, false, false, 222, manager);
+            Client fakeRemoteClient2 = new Client("122.122.2.2", 27000, 222, manager);
             manager.PendingClientsInternal.Add(fakeRemoteClient2);
-            Client fakeRemoteClient3 = new Client("133.133.3.3", 28000, false, false, 333, manager);
+            Client fakeRemoteClient3 = new Client("133.133.3.3", 28000, 333, manager);
             manager.PendingClientsInternal.Add(fakeRemoteClient3);
 
             List<string> expected = new List<string> { fakeRemoteClient1.IP, fakeRemoteClient2.IP, fakeRemoteClient3.IP };

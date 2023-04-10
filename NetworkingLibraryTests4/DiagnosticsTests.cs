@@ -16,7 +16,7 @@ namespace NetworkingLibrary.Tests
         {
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
-            Client remoteClient = new Client("123.123.2.2", 28000, false, false, 123, manager);
+            Client remoteClient = new Client("123.123.2.2", 28000, 123, manager);
             Connection testConnection = new Connection(manager.LocalClient, remoteClient, 5);
             List<Packet> TenRecentSentPackets = new List<Packet>();
             List<Packet> TenRecentReceivedPackets = new List<Packet>();
@@ -71,7 +71,7 @@ namespace NetworkingLibrary.Tests
         {
             // Arrange
             TestNetworkManager manager = new TestNetworkManager(ConnectionType.PEER_TO_PEER, 25, 27000);
-            Client remoteClient = new Client("123.123.2.2", 28000, false, false, 123, manager);
+            Client remoteClient = new Client("123.123.2.2", 28000, 123, manager);
             Connection testConnection = new Connection(manager.LocalClient, remoteClient, 5);
 
             // Act
