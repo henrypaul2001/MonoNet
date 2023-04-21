@@ -334,10 +334,6 @@ namespace NetworkingLibrary
                         Task.Run(() => PacketAcknowledged(ack - i));
                         //ThreadPool.QueueUserWorkItem(_ => PacketAcknowledged(ack - i));
                     }
-                    else
-                    {
-                        Debug.WriteLine("test");
-                    }
                 }
             }
         }

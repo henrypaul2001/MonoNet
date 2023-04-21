@@ -299,6 +299,28 @@ namespace NetworkingLibrary
             }
         }
 
+        public void SendLocalObjectToAllConnections(Networked_GameObject obj)
+        {
+            Type objType = obj.GetType();
+            string payload = $"id={localClient.ID}/objID={obj.ObjectID}/{objType.FullName}/PROPSTART/";
+
+            Dictionary<string, string> properties = obj.ConstructProperties;
+            if (properties != null)
+            {
+                foreach (KeyValuePair<string, string> pair in properties)
+                {
+                    payload += $"{pair.Key}={pair.Value}/";
+                }
+            }
+            payload += "PROPEND/";
+
+            for (int i = 0; i < connections.Count; i++)
+            {
+                PayloadsSent.Add(payload);
+                CreateAndSendSyncOrConstructPacket(PacketType.CONSTRUCT, payload, connections[i].RemoteClient.IP, connections[i].RemoteClient.Port);
+            }
+        }
+
         public void SendLocalObjects(Connection destinationConnection)
         {
             for (int i = 0; i < networkedObjects.Count; i++)
@@ -825,7 +847,8 @@ namespace NetworkingLibrary
             {
                 string remoteIP = split[6 + i].Substring(split[6 + i].IndexOf("=") + 1);
                 string remotePort = split[6 + i + 1].Substring(split[6 + i + 1].IndexOf("=") + 1);
-                if (!pendingConnectionAddresses.Contains(remoteIP) && !currentConnectionAddresses.Contains(remoteIP) && int.Parse(remotePort) != localClient.Port)
+                bool isMe = int.Parse(remotePort) == localClient.Port && remoteIP == localClient.IP;
+                if (!pendingConnectionAddresses.Contains(remoteIP) && !currentConnectionAddresses.Contains(remoteIP) && !isMe)
                 {
                     localClient.RequestConnection(remoteIP, int.Parse(remotePort));
                 }

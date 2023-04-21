@@ -95,7 +95,6 @@ namespace NetworkingLibrary
             this.sendTime = sendTime;
             lost = false;
 
-            CompressData();
         }
 
         // Used for creating requst / accept packets on send
@@ -192,6 +191,7 @@ namespace NetworkingLibrary
         
         void CompressData()
         {
+            // Not yet implemented
             compressedData = data;
         }
 

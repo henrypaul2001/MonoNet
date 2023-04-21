@@ -47,17 +47,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Client.cs" />
-    <Compile Include="Connection.cs" />
-    <Compile Include="ISocket.cs" />
-    <Compile Include="Logger.cs" />
-    <Compile Include="NetworkedVariable.cs" />
-    <Compile Include="Networked_GameObject.cs" />
-    <Compile Include="NetworkManager.cs" />
-    <Compile Include="Packet.cs" />
-    <Compile Include="PacketManager.cs" />
+    <Compile Include="Objects\Client.cs" />
+    <Compile Include="Objects\Connection.cs" />
+    <Compile Include="Socket\ISocket.cs" />
+    <Compile Include="Objects\Logger.cs" />
+    <Compile Include="Sync\NetworkedVariable.cs" />
+    <Compile Include="Sync\Networked_GameObject.cs" />
+    <Compile Include="Managers\NetworkManager.cs" />
+    <Compile Include="Objects\Packet.cs" />
+    <Compile Include="Managers\PacketManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SocketWrapper.cs" />
+    <Compile Include="Socket\SocketWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
