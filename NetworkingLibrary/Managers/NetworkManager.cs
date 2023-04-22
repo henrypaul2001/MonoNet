@@ -44,7 +44,7 @@ namespace NetworkingLibrary
         #endregion
 
         // List representing networked game objects that need to be synced
-        List<Networked_GameObject> networkedObjects;
+        List<NetworkedGameObject> networkedObjects;
 
         // List representing currently connected clients
         List<Client> remoteClients;
@@ -118,7 +118,7 @@ namespace NetworkingLibrary
             pendingClients = new List<Client>();
             remoteClients = new List<Client>();
             connections = new List<Connection>();
-            networkedObjects = new List<Networked_GameObject>();
+            networkedObjects = new List<NetworkedGameObject>();
 
             timeoutGracePeriod = 3;
 
@@ -202,7 +202,7 @@ namespace NetworkingLibrary
             get { return remoteClients; }
         }
 
-        public List<Networked_GameObject> NetworkedObjects
+        public List<NetworkedGameObject> NetworkedObjects
         {
             get { return networkedObjects; }
         }
@@ -299,7 +299,7 @@ namespace NetworkingLibrary
             }
         }
 
-        public void SendLocalObjectToAllConnections(Networked_GameObject obj)
+        public void SendLocalObjectToAllConnections(NetworkedGameObject obj)
         {
             Type objType = obj.GetType();
             string payload = $"id={localClient.ID}/objID={obj.ObjectID}/{objType.FullName}/PROPSTART/";
@@ -665,7 +665,7 @@ namespace NetworkingLibrary
             //split[8] == "VARSTART" -- signifies the start point of the networked variables in packet
 
             // Find object corresponding to client ID and object ID
-            Networked_GameObject obj = GetNetworkedObjectFromClientAndObjectID(clientID, objectID);
+            NetworkedGameObject obj = GetNetworkedObjectFromClientAndObjectID(clientID, objectID);
 
             if (obj == null)
             {
@@ -703,9 +703,9 @@ namespace NetworkingLibrary
             }
         }
 
-        internal Networked_GameObject GetNetworkedObjectFromClientAndObjectID(int clientID, int objectID)
+        internal NetworkedGameObject GetNetworkedObjectFromClientAndObjectID(int clientID, int objectID)
         {
-            foreach (Networked_GameObject obj in networkedObjects)
+            foreach (NetworkedGameObject obj in networkedObjects)
             {
                 if (obj.ClientID == clientID)
                 {

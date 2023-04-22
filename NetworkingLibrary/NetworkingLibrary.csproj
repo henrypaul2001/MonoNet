@@ -52,7 +52,7 @@
     <Compile Include="Socket\ISocket.cs" />
     <Compile Include="Objects\Logger.cs" />
     <Compile Include="Sync\NetworkedVariable.cs" />
-    <Compile Include="Sync\Networked_GameObject.cs" />
+    <Compile Include="Sync\NetworkedGameObject.cs" />
     <Compile Include="Managers\NetworkManager.cs" />
     <Compile Include="Objects\Packet.cs" />
     <Compile Include="Managers\PacketManager.cs" />

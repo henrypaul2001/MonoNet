@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NetworkingLibrary
 {
-    public abstract class Networked_GameObject
+    public abstract class NetworkedGameObject
     {
         NetworkManager networkManager;
         int clientID;
@@ -15,7 +15,7 @@ namespace NetworkingLibrary
 
         Dictionary<string, string> constructProperties;
 
-        public Networked_GameObject(NetworkManager networkManager, int clientID, Dictionary<string, string> constructProperties)
+        public NetworkedGameObject(NetworkManager networkManager, int clientID, Dictionary<string, string> constructProperties)
         {
             this.networkManager = networkManager;
             this.clientID = clientID;
@@ -26,7 +26,7 @@ namespace NetworkingLibrary
             GenerateObjectID();
         }
 
-        public Networked_GameObject(NetworkManager networkManager, int clientID, int objectID)
+        public NetworkedGameObject(NetworkManager networkManager, int clientID, int objectID)
         {
             this.networkManager = networkManager;
             this.clientID = clientID;
