@@ -15,6 +15,12 @@ namespace NetworkingLibrary
 
         Dictionary<string, string> constructProperties;
 
+        /// <summary>
+        /// Local constructor
+        /// </summary>
+        /// <param name="networkManager"></param>
+        /// <param name="clientID">ID of local client</param>
+        /// <param name="constructProperties">Properties that will be communicated to remote clients upon construction to determine which parameters are used for the object</param>
         public NetworkedGameObject(NetworkManager networkManager, int clientID, Dictionary<string, string> constructProperties)
         {
             this.networkManager = networkManager;
@@ -26,6 +32,12 @@ namespace NetworkingLibrary
             GenerateObjectID();
         }
 
+        /// <summary>
+        /// Remote constructor
+        /// </summary>
+        /// <param name="networkManager"></param>
+        /// <param name="clientID">ID of origin client</param>
+        /// <param name="objectID">ID of object communicated by remote client</param>
         public NetworkedGameObject(NetworkManager networkManager, int clientID, int objectID)
         {
             this.networkManager = networkManager;
@@ -62,31 +74,36 @@ namespace NetworkingLibrary
             objectID = id;
         }
 
+        /// <summary>
+        /// The ID of the client this object belongs to
+        /// </summary>
         public int ClientID
         {
             get { return clientID; }
         }
 
+        /// <summary>
+        /// Used to identify objects in the same client
+        /// </summary>
         public int ObjectID
         {
             get { return objectID; }
         }
 
+        /// <summary>
+        /// Does this object belong to the local client
+        /// </summary>
         public bool IsLocal
         {
             get { return isLocal; }
         }
 
+        /// <summary>
+        /// Which parameters should be used when constructing object remotely
+        /// </summary>
         public Dictionary<string, string> ConstructProperties
         {
             get { return constructProperties; }
         }
-
-        /*
-        public Packet constructPacket()
-        {
-            throw new NotImplementedException();
-        }
-        */
     }
 }

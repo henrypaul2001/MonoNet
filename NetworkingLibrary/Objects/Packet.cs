@@ -128,46 +128,73 @@ namespace NetworkingLibrary
             CompressData();
         }
 
+        /// <summary>
+        /// Target IP of packet
+        /// </summary>
         public string IPDestination
         {
             get { return ipDestination; }
         }
 
+        /// <summary>
+        /// Address packet came from
+        /// </summary>
         public string IPSource
         {
             get { return ipSource; }
         }
 
+        /// <summary>
+        /// Port number packet came from
+        /// </summary>
         public int PortSource
         {
             get { return portSource; }
         }
 
+        /// <summary>
+        /// Target port number of packet
+        /// </summary>
         public int PortDestination
         {
             get { return portDestination; }
         }
 
+        /// <summary>
+        /// The data of the packet in byte form
+        /// </summary>
         public byte[] Data
         {
             get { return data; }
         }
 
+        /// <summary>
+        /// The compressed packet data in byte form
+        /// </summary>
         public byte[] CompressedData
         {
             get { return compressedData; }
         }
 
+        /// <summary>
+        /// Sequence number of the packet
+        /// </summary>
         public int Sequence
         {
             get { return sequence; }
         }
 
+        /// <summary>
+        /// Remote sequence number the packet is acknowledging
+        /// </summary>
         public int Ack
         {
             get { return ack; }
         }
 
+        /// <summary>
+        /// UTC converted time on packet send
+        /// </summary>
         public DateTime SendTime
         {
             get { return sendTime; }
@@ -178,6 +205,9 @@ namespace NetworkingLibrary
             get { return packetType; }
         }
 
+        /// <summary>
+        /// Bitfield representing which of the 32 most recently received packets are being acknowledged
+        /// </summary>
         public AckBitfield AckBitfield
         {
             get { return ackBitfield; }

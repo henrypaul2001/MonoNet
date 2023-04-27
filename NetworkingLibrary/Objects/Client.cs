@@ -20,27 +20,19 @@ namespace NetworkingLibrary
 
         int id;
         int port;
-        //int protocolID;
 
-        //List<Connection> connections;
         SocketWrapper socket;
 
         NetworkManager networkManager;
 
         string ip;
 
-        //bool isHost;
-        //bool isServer;
-
-        // NOTE FOR SILLY DUMB LITTLE STUDENT TO SELF... MAKE A LOCALCLIENT CLASS THAT DERIVES FROM THIS CLIENT CLASS YOU WILL APPRECIATE THIS MESSAGE YOU LEFT FOR YOURSELF WHEN YOU FORGET THAT YOU WERE GONNA DO THAT
         // Local client constructor
         internal Client(string ip, NetworkManager networkManager)
         {
             this.networkManager = networkManager;
-            //List<Client> otherClients = networkManager.RemoteClients;
 
             port = networkManager.Port;
-            //protocolID = networkManager.ProtocolID;
             
             // If local client
             socket = new SocketWrapper(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp, networkManager);
@@ -48,35 +40,21 @@ namespace NetworkingLibrary
             // Socket will listen to packets from all IP addresses
             socket.Bind(new IPEndPoint(IPAddress.Any, port));
 
-            //List<int> clientIDs = networkManager.GetClientIDs();
-
-            // Generate unique ID for client
-            //id = GenerateClientID(clientIDs);
             id = -1;
 
             networkManager.PacketManager.StartReceiving(socket, networkManager);
-            //end if
 
-            //this.isServer = isServer;
             this.ip = ip;
-            //this.isHost = isHost;
         }
 
         // Remote client constructor
         internal Client(string ip, int port, int id, NetworkManager networkManager)
         {
             this.networkManager = networkManager;
-            //List<Client> otherClients = networkManager.RemoteClients;
 
-            //protocolID = networkManager.ProtocolID;
-
-            //this.isServer = isServer;
             this.ip = ip;
-            //this.isHost = isHost;
             this.id = id;
             this.port = port;
-
-            //connections = new List<Connection>();
         }
 
         internal ref SocketWrapper Socket
@@ -90,23 +68,25 @@ namespace NetworkingLibrary
             set { id = value; }
         }
 
+        /// <summary>
+        /// The ID of the client, used to identify game objects
+        /// </summary>
         public int ID
         {
             get { return id; }
         }
 
-        /*
-        public List<Connection> Connections
-        {
-            get { return connections; }
-        }
-        */
-
+        /// <summary>
+        /// The IP address of the client
+        /// </summary>
         public string IP
         {
             get { return ip; }
         }
 
+        /// <summary>
+        /// The port number used by the client's socket
+        /// </summary>
         public int Port
         {
             get { return port; }
@@ -159,7 +139,7 @@ namespace NetworkingLibrary
             //networkManager.PacketManager.StartReceiving(ref socket, networkManager);
         }
 
-        public void Close()
+        internal void Close()
         {
             socket.Shutdown(SocketShutdown.Both);
             socket.Close();

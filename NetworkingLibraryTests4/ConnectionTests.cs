@@ -134,12 +134,13 @@ namespace NetworkingLibrary.Tests
 
             // Act
             testConnection.ProcessAckBitfield(sequencesToAcknowledge.Last(), testBitfield);
+
+            // wait for threads to exit
+            Thread.Sleep(5 * 1000);
+
             Dictionary<int, Packet> actual = testConnection.InternalPacketsWaitingForAck;
             //List<Packet> actual = testConnection.InternalWaitingPackets;
             manager.Close();
-
-            // wait for threads to exit
-            //Thread.Sleep(5 * 1000);
 
             // Assert
             Assert.AreEqual(expected, actual);

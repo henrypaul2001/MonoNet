@@ -80,11 +80,10 @@ namespace NetworkingLibrary
     {
         #region stuff for unit tests
         internal int InternalRemoteSequence { set { remoteSequence = value; } }
-        //internal Dictionary<int, Packet> InternalPacketsWaitingForAck { get { return packetsWaitingForAck; } set { packetsWaitingForAck = value; } }
+
         internal List<Packet> InternalLostPackets { get { return lostPackets; } }
         internal Packet[] InternalSentPacketsBuffer { get { return sentPacketsBuffer; } set { sentPacketsBuffer = value; } }
-        //internal ConcurrentBag<Packet> InternalWaitingPackets { get { return waitingPackets; } set { waitingPackets = value; } }
-        //internal List<Packet> InternalWaitingPackets { get { return waitingPackets; } set { waitingPackets = value; } }
+
         internal Dictionary<int, Packet> InternalPacketsWaitingForAck { get { return packetsWaitingForAck; } set { packetsWaitingForAck = value; } }
         #endregion
 
@@ -98,8 +97,6 @@ namespace NetworkingLibrary
 
         object waitingListLock;
 
-        //ConcurrentBag<Packet> waitingPackets = new ConcurrentBag<Packet>();
-        //List<Packet> waitingPackets;
         Dictionary<int, Packet> packetsWaitingForAck;
         List<Packet> lostPackets;
 
@@ -117,8 +114,6 @@ namespace NetworkingLibrary
 
         int remoteSequence;
         int localSequence;
-
-        int processBitfieldThreads;
 
         public Connection(Client localClient, Client remoteClient, float packetTimeoutTime)
         {
@@ -141,54 +136,73 @@ namespace NetworkingLibrary
             sentPacketsBufferStart = 0;
             sentPacketsBufferCount = 0;
 
-            //waitingPackets = new ConcurrentBag<Packet>();
-            //waitingPackets = new List<Packet>();
             packetsWaitingForAck = new Dictionary<int, Packet>();
             lostPackets = new List<Packet>();
 
             timeAtConnectionEstablished = DateTime.UtcNow;
 
             waitingListLock = new object();
-
-            int processBitfieldThreads = 12;
-            ThreadPool.SetMinThreads(processBitfieldThreads, processBitfieldThreads);
         }
 
+        /// <summary>
+        /// Diagnostic struct including RTT, PacketLossPercentage and LatencyEstimation
+        /// </summary>
         public Diagnostics DiagnosticInfo
         {
             get { return diagnostics; }
         }
 
+        /// <summary>
+        /// The remote client instance of this connection
+        /// </summary>
         public Client RemoteClient
         {
             get { return remoteClient; }
         }
 
+        /// <summary>
+        /// The local client instance of this connection
+        /// </summary>
         public Client LocalClient
         {
             get { return localClient; }
         }
 
+        /// <summary>
+        /// The most recently received sequence number in this connection
+        /// </summary>
         public int RemoteSequence
         {
             get { return remoteSequence; }
         }
 
+        /// <summary>
+        /// The most recently sent sequence number in this connection
+        /// </summary>
         public int LocalSequence
         {
             get { return localSequence; }
         }
 
+        /// <summary>
+        /// The remote client ID of this connection
+        /// </summary>
         public int RemoteClientID
         {
             get { return remoteClientID; }
         }
 
+        /// <summary>
+        /// The UTC converted time when the last packet was received in this connection
+        /// </summary>
         public DateTime TimeAtLastPacketReceive
         {
             get { return timeAtLastPacketReceived; }
         }
 
+        /// <summary>
+        /// The UTC converted time when this connection was established
+        /// </summary>
         public DateTime TimeAtConnectionEstablished
         {
             get { return timeAtConnectionEstablished; }
@@ -287,7 +301,6 @@ namespace NetworkingLibrary
                 {
                     Debug.WriteLine(e, "Packet I/O");
                 }
-                //waitingPackets.Add(packet);
             }
         }
 
@@ -332,30 +345,13 @@ namespace NetworkingLibrary
                     if (ack - i >= 0)
                     {
                         Task.Run(() => PacketAcknowledged(ack - i));
-                        //ThreadPool.QueueUserWorkItem(_ => PacketAcknowledged(ack - i));
                     }
                 }
             }
         }
 
-        /*
-        Packet FindWaitingPacketFromSequence(int sequence)
-        {
-            foreach (Packet packet in waitingPackets)
-            {
-                if (packet.Sequence == sequence)
-                {
-                    // Found packet
-                    return packet;
-                }
-            }
-            return null;
-        }
-        */
-
         private void PacketAcknowledged(int acknowledgedSequence)
         {
-            //Packet acknowledgedPacket = FindWaitingPacketFromSequence(acknowledgedSequence);
             DateTime timeNow = DateTime.UtcNow;
 
             Packet acknowledgedPacket;
@@ -364,7 +360,6 @@ namespace NetworkingLibrary
                 bool success = packetsWaitingForAck.TryGetValue(acknowledgedSequence, out acknowledgedPacket);
                 if (!success)
                 {
-                    //Debug.WriteLine("Acknowledged packet was not found in waiting list, ignoring acknowledgement", "Packet Acknowledgement");
                     return;
                 }
 

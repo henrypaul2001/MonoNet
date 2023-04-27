@@ -65,8 +65,6 @@ namespace NetworkingLibrary
         float timeoutTime;
         float timeoutGracePeriod;
 
-        Client server;
-
         Client localClient;
 
         PacketManager packetManager;
@@ -98,6 +96,10 @@ namespace NetworkingLibrary
 
         void Initialise(ConnectionType connectionType, int protocolID, int port)
         {
+            if (connectionType != ConnectionType.PEER_TO_PEER)
+            {
+                throw new NotImplementedException();
+            }
             try
             {
                 // Load testing assembly
@@ -237,6 +239,9 @@ namespace NetworkingLibrary
             get { return closed; }
         }
 
+        /// <summary>
+        /// Update the NetworkManager in a loop to synchronise the game state between connected clients
+        /// </summary>
         public void Update()
         {
             try
@@ -299,6 +304,10 @@ namespace NetworkingLibrary
             }
         }
 
+        /// <summary>
+        /// Instruct all connected clients to construct an instance of a specific networked object
+        /// </summary>
+        /// <param name="obj">Networked object to construct</param>
         public void SendLocalObjectToAllConnections(NetworkedGameObject obj)
         {
             Type objType = obj.GetType();
@@ -321,6 +330,10 @@ namespace NetworkingLibrary
             }
         }
 
+        /// <summary>
+        /// Instruct a connection to construct an instance of all existing networked game objects
+        /// </summary>
+        /// <param name="destinationConnection">The target connection</param>
         public void SendLocalObjects(Connection destinationConnection)
         {
             for (int i = 0; i < networkedObjects.Count; i++)
@@ -341,6 +354,8 @@ namespace NetworkingLibrary
                     payload += "PROPEND/";
                     PayloadsSent.Add(payload);
                     CreateAndSendSyncOrConstructPacket(PacketType.CONSTRUCT, payload, destinationConnection.RemoteClient.IP, destinationConnection.RemoteClient.Port);
+
+                    #region Scrapped remote object construction
                     /*
                     Type objType = networkedObjects[i].GetType();
                     ConstructorInfo[] constructors = objType.GetConstructors(BindingFlags.Instance | BindingFlags.Public);
@@ -420,10 +435,14 @@ namespace NetworkingLibrary
 
                     CreateAndSendSyncOrConstructPacket(PacketType.CONSTRUCT, payload);
                     */
+                    #endregion
                 }
             }
         }
 
+        /// <summary>
+        /// Send synchronisation packets through all connections for every locally created networked game object
+        /// </summary>
         public void SendGameState()
         {
             for (int i = 0; i < networkedObjects.Count; i++)
@@ -507,6 +526,13 @@ namespace NetworkingLibrary
             return packet;
         }
 
+        /// <summary>
+        /// Called when a remote client has instructed you to construct a networked game object
+        /// </summary>
+        /// <param name="clientID">The ID of the client sending the instruction</param>
+        /// <param name="objectID">The ID of the object to be constructed</param>
+        /// <param name="objectType">The object type</param>
+        /// <param name="properties">Construction properties to determine which parameters should be used in object construction</param>
         public abstract void ConstructRemoteObject(int clientID, int objectID, Type objectType, Dictionary<string, string> properties);
 
         internal void ProcessConstructPacket(Packet constructPacket)
@@ -593,6 +619,7 @@ namespace NetworkingLibrary
             // Pass values to abstract method so developer can create local instance of networked object
             ConstructRemoteObject(clientID, objectID, objType, properties);
 
+            #region Scrapped remote object construction
             /*
             int paramIndex = 0;
             string currentString;
@@ -628,6 +655,7 @@ namespace NetworkingLibrary
                 networkedObjects.Add((Networked_GameObject)instance);
             }
             */
+            #endregion
         }
 
         internal void ProcessSyncPacket(Packet syncPacket)
@@ -733,6 +761,11 @@ namespace NetworkingLibrary
             }
         }
 
+        /// <summary>
+        /// Connect the local client to a target host
+        /// </summary>
+        /// <param name="ip">The target IP address</param>
+        /// <param name="port">The target port number</param>
         public void ConnectLocalClientToHost(string ip, int port)
         {
             LastLocalClientConnectionRequest = localClient.RequestConnection(ip, port);
@@ -783,6 +816,9 @@ namespace NetworkingLibrary
             }
         }
 
+        /// <summary>
+        /// Override to implement additional behaviours when receiving a connection request
+        /// </summary>
         public virtual void HandleConnectionRequest(Packet connectionPacket)
         {
             HandleConnctionRequestCalls++;
@@ -810,6 +846,9 @@ namespace NetworkingLibrary
             localClient.AcceptConnection(connectionPacket, remoteID);
         }
 
+        /// <summary>
+        /// Override to implement additional behaviours when receiving a connection accept
+        /// </summary>
         public virtual void HandleConnectionAccept(Packet acceptPacket)
         {
             HandleConnectionAcceptCalls++;
@@ -906,10 +945,22 @@ namespace NetworkingLibrary
             }
         }
 
+        /// <summary>
+        /// Override to implement custom behaviours when a connection has been established
+        /// </summary>
+        /// <param name="connection">The newly established connection</param>
         public abstract void ConnectionEstablished(Connection connection);
 
+        /// <summary>
+        /// Override to implement custom behaviours when a client has disconnected
+        /// </summary>
+        /// <param name="clientID">The client ID of the disconnecting client, use this to remove any existing game objects that originate from this client</param>
         public abstract void ClientDisconnect(int clientID);
 
+        /// <summary>
+        /// Override to implement additional behaviours when a client times out
+        /// </summary>
+        /// <param name="lostClient">The lost client, use this to remove any existing objects using the ID of this client</param>
         public virtual void ClientTimeout(Client lostClient)
         {
             ClientTimeoutCalls++;
@@ -933,6 +984,11 @@ namespace NetworkingLibrary
             }
         }
 
+        /// <summary>
+        /// Get list of currently connected client IDs
+        /// </summary>
+        /// <param name="includeLocal">Should the local client ID be included in list</param>
+        /// <returns>List of currently connected client IDs</returns>
         public List<int> GetClientIDs(bool includeLocal)
         {
             // Get all client IDs
@@ -955,19 +1011,13 @@ namespace NetworkingLibrary
             return clientIDs;
         }
 
+        /// <summary>
+        /// Get list of currently connected IP addresses
+        /// </summary>
+        /// <returns>List of connected IPs</returns>
         public List<string> GetConnectedAddresses()
         {
             List<string> addresses = new List<string>();
-
-            /*
-            if (remoteClients != null)
-            {
-                foreach (Client client in remoteClients)
-                {
-                    addresses.Add(client.IP);
-                }
-            }
-            */
 
             if (connections != null)
             {
@@ -980,6 +1030,10 @@ namespace NetworkingLibrary
             return addresses;
         }
 
+        /// <summary>
+        /// Get list of currently pending connection IP addresses
+        /// </summary>
+        /// <returns>List of pending IPs</returns>
         public List<string> GetPendingAddresses()
         {
             List<string> addresses = new List<string>();
@@ -995,6 +1049,9 @@ namespace NetworkingLibrary
             return addresses;
         }
 
+        /// <summary>
+        /// Close the manager and associated socket, also informs remote clients of disconnection, call this in your game exit method
+        /// </summary>
         public void Close()
         {
             closed = true;
@@ -1007,7 +1064,6 @@ namespace NetworkingLibrary
             hostIndex = -1;
             protocolID = -1;
             port = -1;
-            server = null;
             localClient = null;
             packetManager = null;
         }

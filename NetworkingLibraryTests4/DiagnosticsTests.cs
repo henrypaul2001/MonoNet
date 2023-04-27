@@ -63,7 +63,7 @@ namespace NetworkingLibrary.Tests
             float expected = rttSum / 10;
 
             // Assert - calculated RTT should be an average of the 10 most recently received RTT values
-            Assert.AreEqual(expected, actual, 0.3f);
+            Assert.AreEqual(expected, actual);
         }
 
         [Test()]

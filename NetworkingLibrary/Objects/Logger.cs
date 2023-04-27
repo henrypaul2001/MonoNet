@@ -8,12 +8,19 @@ using System.Threading.Tasks;
 
 namespace NetworkingLibrary
 {
+    /// <summary>
+    /// Overwite - file will be cleared before written to
+    /// Append - file will have lines added to end instead of being cleared
+    /// </summary>
     public enum LoggingMode
     {
         OVERWRITE,
         APPEND
     }
 
+    /// <summary>
+    /// The format of which lines will be written in output file
+    /// </summary>
     public enum LoggingFormat
     {
         DATETIMEANDMESSAGE,
@@ -46,6 +53,12 @@ namespace NetworkingLibrary
             americanDateFormat = false;
         }
 
+        /// <summary>
+        /// Log a message in a specific mode with a specific format
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="mode"></param>
+        /// <param name="format"></param>
         public void Log(string message, LoggingMode mode, LoggingFormat format)
         {
             this.mode = mode;
@@ -53,18 +66,32 @@ namespace NetworkingLibrary
             WriteLine(message);
         }
 
+        /// <summary>
+        /// Log a message in a specific format
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="format"></param>
         public void Log(string message, LoggingFormat format)
         {
             this.format = format;
             WriteLine(message);
         }
 
+        /// <summary>
+        /// Log a message in a specific mode
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="mode"></param>
         public void Log(string message, LoggingMode mode)
         {
             this.mode = mode;
             WriteLine(message);
         }
 
+        /// <summary>
+        /// Log a message in the current mode and format
+        /// </summary>
+        /// <param name="message"></param>
         public void Log(string message)
         {
             WriteLine(message);
