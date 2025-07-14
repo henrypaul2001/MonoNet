@@ -1,4 +1,4 @@
-# Networking Library for Games Development
+# MonoNet - Networking Library for Games Development
 
 An easy to use C# based networking library, designed initially for the MonoGame framework but with the flexibility to be used across various C# based engines, built to provide beginner game developers the tools required to build networked multiplayer games in peer-to-peer sessions. The library handles synchronisation of game objects, connection handling / management and diagnostic information. All without requiring any experience of networking from the developer.
 
