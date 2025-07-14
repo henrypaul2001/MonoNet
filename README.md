@@ -1,5 +1,31 @@
 # MonoNet - Networking Library for Games Development
 
+## Why am I showing you this?
+
+As a programmer who’s been learning continuously since finishing this project, I'll be honest... I'm not exactly proud of the code quality here. So why am I showing you this?
+
+Because this project taught me what might be the most valuable lesson I'll ever learn:
+
+***You really can just learn anything, no matter how intimidating it might seem***
+
+A few months before the academic year began, all final-year students had to choose an honours project topic. I had no idea what I was going to do. Thankfully, the department provided a list of project proposals from supervisors for students like me who were stuck.
+
+There was one in particular that caught my eye: __"Networked Tower Defense Game"__. That idea eventually evolved into what you're seeing now, a generic networking library.
+
+So, why did I choose it?
+
+Because I was absolutely terrified of networking.
+
+It was a topic that felt so far beyond what I was capable of, something I always assumed I'd never be able to do, especially not on my own. But that fear was exactly why I picked it. It was the perfect opportunity to challenge myself.
+
+And it was a challenge. The code may not be great and the design may be flawed, but I learned a lot. Without this project, I would not be the programmer I am today.
+
+This project taught me that no matter how complex a subject may seem, no matter how incapable, unprepared or unqualified you feel, you can learn it.
+
+Physics simulation, graphics programming, engine development: all topics that used to intimidate me. But I brought the key lesson of this project along with me, and it has made all the difference.
+
+## Intro
+
 An easy to use C# based networking library, designed initially for the MonoGame framework but with the flexibility to be used across various C# based engines, built to provide beginner game developers the tools required to build networked multiplayer games in peer-to-peer sessions. The library handles synchronisation of game objects, connection handling / management and diagnostic information. All without requiring any experience of networking from the developer.
 
 ***Note: this should only be used to experiment and should definitely not be used in any game that could potentially reach a consumer. Security and privacy issues are likely, but have not been tested or found. Only use in "real" games if you are confident that you can extend the capabilities of the library. The performance also needs work. There we go, lawsuit avoided!***
